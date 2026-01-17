@@ -33,7 +33,7 @@ const Header = () => {
                 <div className='flex-1 flex justify-center '>
                     <button
                         onClick={() => { window.history.pushState({}, '', '/register'); window.dispatchEvent(new PopStateEvent('popstate')); }}
-                        className='bg-white text-emerald-700 px-4 py-2 rounded-md font-semibold hover:opacity-90 ml-auto   sm:inline text-nowrap cursor-pointer mt-7 mr-3'
+                        className='bg-gray-50 text-emerald-700 px-4 py-2 rounded-md font-semibold hover:opacity-90 ml-auto   sm:inline text-nowrap cursor-pointer mt-7 mr-3'
                     >
                         <UserPlus className='w-4 h-4 inline-block mr-1' />
                         <>Register Mosque</>
@@ -46,8 +46,8 @@ const Header = () => {
             </div>
             <div className='flex items-center gap-4 ml-auto mr-3'>
                 <div className='flex flex-col items-end gap-2 ml-auto'>
-                    <button onClick={() => { window.history.pushState({}, '', '/signup'); window.dispatchEvent(new PopStateEvent('popstate')); }} className='text-white/90 text-sm px-3 py-1 rounded-md border border-white/20 hover:bg-white/10'>Sign Up</button>
-                    <button onClick={() => { window.history.pushState({}, '', '/login'); window.dispatchEvent(new PopStateEvent('popstate')); }} className='bg-white text-emerald-700 px-3 py-1 rounded-md font-semibold'>Log In</button>
+                    <button onClick={() => { window.history.pushState({}, '', '/signup'); window.dispatchEvent(new PopStateEvent('popstate')); }} className='text-white/90 text-sm px-3 py-1 rounded-md border border-white/20 hover:bg-white/10 cursor-pointer'>Sign Up</button>
+                    <button onClick={() => { window.history.pushState({}, '', '/login'); window.dispatchEvent(new PopStateEvent('popstate')); }} className='bg-white text-emerald-700 px-3 py-1 rounded-md font-semibold cursor-pointer'>Log In</button>
                 </div>
             </div>
 

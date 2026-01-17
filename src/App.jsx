@@ -3,6 +3,7 @@ import './App.css'
 import Homepage from './pages/HomePage'
 import RegisterMosque from './pages/RegisterMosque';
 import Signup from './pages/Signup'
+import RegisterVerification from './pages/RegisterVerification';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import Mosque from './pages/Mosque';
@@ -16,6 +17,7 @@ function App() {
       <Routes>
         <Route path='/' element={<Homepage />} />
         <Route path='/signup' element={<Signup />} />
+        <Route path='/verify-email' element={<RegisterVerification />} />
         <Route path='/register-mosque' element={<RegisterMosque />} />
         <Route path='/register' element={<RegisterMosque />} />
         <Route path='/login' element={<Login />} />

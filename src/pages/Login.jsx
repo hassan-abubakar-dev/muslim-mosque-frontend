@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 const Login = () => {
-  const [form, setForm] = useState({ username: '', email: '', password: '' });
+  const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -15,7 +15,7 @@ const Login = () => {
     setError('');
     setSuccess('');
 
-    if (!form.username || !form.email || !form.password) {
+    if (!form.email || !form.password) {
       setError('Please fill in all required fields.');
       return;
     }
@@ -23,13 +23,13 @@ const Login = () => {
     // Mock submit (replace with real API call)
     setTimeout(() => {
       setSuccess('Login successful (mock).');
-      setForm({ username: '', email: '', password: '' });
+      setForm({ email: '', password: '' });
     }, 600);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-emerald-800 via-emerald-700 to-green-600 flex items-center justify-center p-6 pt-28">
-      <div className="w-full max-w-md bg-white/95 rounded-xl shadow-lg p-6">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
+      <div className="w-full max-w-md bg-white/95 rounded-xl shadow-lg p-6 mt-20">
         <h1 className="text-2xl font-semibold text-emerald-800">Log In</h1>
         <p className="text-sm text-gray-600 mt-1">Enter your credentials to access your account.</p>
 
@@ -38,17 +38,12 @@ const Login = () => {
           {success && <div className="text-sm text-emerald-700">{success}</div>}
 
           <label className="block">
-            <span className="text-gray-700 text-sm">Username or Email</span>
-            <input name="username" value={form.username} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300" placeholder="Your name or email" />
-          </label>
-
-          <label className="block">
-            <span className="text-gray-700 text-sm">Email</span>
+            <span className="text-gray-700 text-sm">Email *</span>
             <input name="email" type="email" value={form.email} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300" placeholder="you@example.com" />
           </label>
 
           <label className="block">
-            <span className="text-gray-700 text-sm">Password</span>
+            <span className="text-gray-700 text-sm">Password *</span>
             <input name="password" type="password" value={form.password} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300" placeholder="Enter your password" />
           </label>
 
