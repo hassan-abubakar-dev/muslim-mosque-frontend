@@ -1,14 +1,17 @@
 import { useState } from 'react';
 import publicAxiosInstance from '../../auth/publicAxiosInstance';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useUserContext } from '../context/UserContext';
 
 const RegisterVerification = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const {fetchuserProfile, setLoggedInUser} = useUserContext();
 const navigate = useNavigate();
 const location = useLocation();
+  const isDev = import.meta.env.VITE_ENV === 'development';
 
 const registeredEmail = location.state?.email || '';
 
@@ -38,8 +41,12 @@ const registeredEmail = location.state?.email || '';
         console.log('Verification response:', res.data);
         setSuccess(`Success: ${res.data.message || 'Email verified successfully!'}`);
         setVerificationCode('');
-        setLoading(false); 
-        navigate('/');
+        setLoading(false);
+        const accessToken = res.data.accessToken; 
+        localStorage.setItem('accessToken', accessToken); 
+        await fetchuserProfile();
+        setLoggedInUser(res.data.user)
+        navigate('/', {replace: true});
       }
     } catch (err) {
       if (err.code === 'ECONNABORTED') {
@@ -51,8 +58,11 @@ const registeredEmail = location.state?.email || '';
       } else {
         setError('Failed to verify email: ' + (err.response?.data?.message || err.message));
       }
-      console.error('Verification error:', err.response?.data?.message);
       setLoading(false);
+
+      if(isDev){
+        console.error('Verification error:', err.response?.data?.message);
+      }
       return;
     }
   };

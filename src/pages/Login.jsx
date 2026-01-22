@@ -1,38 +1,78 @@
 import { useState } from 'react';
+import publicAxiosInstance from '../../auth/publicAxiosInstance';
+import { useNavigate } from 'react-router-dom';
+import { useUserContext } from '../context/UserContext';
+import Toast from '../components/Toast';
 
 const Login = () => {
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const {fetchUserProfile, setLoggedInUser} = useUserContext();
+  const [networkError, setNotworkError] = useState(false);
+    const isDev = import.meta.env.VITE_ENV === 'development';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((s) => ({ ...s, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+    setLoading(true);
 
     if (!form.email || !form.password) {
+      setLoading(false);
       setError('Please fill in all required fields.');
       return;
     }
+    const body = {
+      email: form.email,
+      password: form.password,
+    };
 
-    // Mock submit (replace with real API call)
-    setTimeout(() => {
-      setSuccess('Login successful (mock).');
-      setForm({ email: '', password: '' });
-    }, 600);
+    try{
+      const res = await publicAxiosInstance.post('/auths/login', body);
+      if(res.status < 400){
+        setSuccess(`Success: ${res.data.message || 'Login successful!'}`);
+        setForm({ email: '',  password: '' });
+        setLoading(false);
+        const accessToken = res.data.accessToken;
+        localStorage.setItem('accessToken', accessToken);
+        setLoggedInUser(res.data.user);
+        await fetchUserProfile();
+
+        navigate('/', { replace: true });
+      }
+    } 
+    catch(err){
+      
+      setLoading(false);
+      
+      if(err?.response?.data?.message === 'Please provide a valid email address'){
+        setError('Login failed. invalid email address Please try again.')
+      }else if(err?.response?.data?.message === 'incorrect password'){
+        setError('Login failed. incorrect password Please try again.');
+      }else{
+        setNotworkError(true);
+      }
+
+      if(isDev){
+        console.log('err.response', err);
+      }
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white/95 rounded-xl shadow-lg p-6 mt-20">
+      <div className="w-full max-w-md bg-white/95 rounded-xl shadow-lg p-6 ">
         <h1 className="text-2xl font-semibold text-emerald-800">Log In</h1>
         <p className="text-sm text-gray-600 mt-1">Enter your credentials to access your account.</p>
-
+      {networkError && <Toast />}
         <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
           {error && <div className="text-sm text-red-600">{error}</div>}
           {success && <div className="text-sm text-emerald-700">{success}</div>}
@@ -48,7 +88,9 @@ const Login = () => {
           </label>
 
           <div className="pt-2">
-            <button type="submit" className="w-full bg-emerald-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-emerald-800">Log In</button>
+            <button type="submit"  disabled={loading} className="w-full bg-emerald-700 text-white px-4  cursor-pointer py-2 rounded-md font-semibold hover:bg-emerald-800 disabled:cursor-not-allowed disabled:bg-gray-400">
+               {loading ? 'Signing up...' : 'Log In'}
+            </button>
           </div>
         </form>
 

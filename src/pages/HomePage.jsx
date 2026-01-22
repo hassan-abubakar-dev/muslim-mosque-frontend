@@ -1,49 +1,135 @@
-import MosqueCard from '../components/MosqueCard';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import Header from '../components/Header';
+import MosqueListSkeleton from '../components/loadingSkeletons/MosqueListSkeleton';
+import ProfileImage from '../assets/profile.jpg'
+ import { MapPin } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import publicAxiosInstance from '../../auth/publicAxiosInstance';
+import { useNavigate } from 'react-router-dom';
+import Toast from '../components/Toast';
 
-const ensureSampleMosques = () => {
-  const existing = JSON.parse(localStorage.getItem('mosques') || '[]');
-  if (existing.length >= 3) return existing;
+const HomePage = () => {
 
-  const samples = [
-    { id: 'mosq-1', name: 'Al-Noor Mosque', country: 'Egypt', city: 'Cairo', description: 'Community mosque with regular lectures.', is_verified: true },
-    { id: 'mosq-2', name: 'Ibn Al-Qayyim Centre', country: 'Nigeria', city: 'Lagos', description: 'Active educational programs and youth lectures.', is_verified: false },
-    { id: 'mosq-3', name: 'Fatih Islamic Center', country: 'Turkey', city: 'Istanbul', description: 'Historic mosque with weekly guest scholars.', is_verified: true }
-  ];
+  const [mosques, setMosques] = useState([]);
+  const [mosqueLoading, setMosqLoading] = useState(false); 
+  const navigate = useNavigate();
+  const isDev = import.meta.env.VITE_ENV === 'development';
+  const [Error, setError] = useState(false);
+  const fetchMosques = async() => {
+    setMosqLoading(true)
+    try{
+      const res = await publicAxiosInstance.get('/mosques/get-mosques');
+      if(res.status < 400){
+         setMosques(res.data.mosques)
+        
+      }
+    }
+    catch(err){
+     if(isDev){
+       console.log(err.response.data || err.message);
+     }
+      
+    }finally{
+      setMosqLoading(false);
+    }
+  };
 
-  const merged = [...samples, ...existing].slice(0, 6);
-  localStorage.setItem('mosques', JSON.stringify(merged));
-  return merged;
-};
+  const openMosque = (mosque) => {
+    navigate(`/mosque/${mosque.id}`, {state: {mosque}});
+  };
 
-const Homepage = () => {
-    const [mosques, setMosques] = useState([]);
+  useEffect(() => {
+    fetchMosques();
+  }, []);
 
-    useEffect(() => {
-      const list = ensureSampleMosques();
-      setMosques(list.slice(0,3));
-    }, []);
-
-      const navigate = useNavigate();
-      const openMosque = (id) => navigate(`/mosque/${id}`);
-
+if(mosqueLoading){
+  return <MosqueListSkeleton />
+}else{
+  
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
+      <div className="min-h-screen ">
         <main className="max-w-6xl mx-auto p-6 pt-8 mt-20">
           <h2 className="text-2xl font-semibold mb-4">Featured Mosques</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {mosques.map(m => (
-              <div key={m.id} onClick={() => openMosque(m.id)}>
-                <MosqueCard mosque={m} />
-              </div>
-            ))}
+        {Error && <Toast />}
+
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  {mosques.length > 0 && mosques.map((mosque) => (
+    <div
+      key={mosque.id}
+      className="cursor-pointer bg-white rounded-xl shadow-md hover:shadow-lg overflow-hidden
+                 w-full max-w-sm flex flex-col min-h-[360px]"
+      onClick={() => openMosque(mosque)}
+    >
+      {/* Image */}
+      <div className="h-40 w-full overflow-hidden">
+        <img
+          src={mosque?.mosqueProfile?.image}
+          alt={mosque.name || 'Mosque'}
+          className="w-full h-full object-cover"
+        />
+      </div>
+
+      {/* Content */}
+      <div className="p-4 flex flex-col flex-1">
+        {/* Top info */}
+        <div>
+          {/* Name + Status */}
+          <div className="flex items-center gap-2">
+            <h3
+              className="font-semibold text-gray-800 text-lg truncate flex-1"
+              title={mosque.name}
+            >
+              {mosque.name}
+            </h3>
+
+            <span className="shrink-0 text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
+              {mosque.status}
+            </span>
           </div>
+
+          {/* Location */}
+          <div className="flex items-center gap-1 text-sm text-gray-600 mt-1 truncate">
+            <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span className="truncate">
+              {mosque.localGovernment}, {mosque.state}, {mosque.country}
+            </span>
+          </div>
+
+          {/* Description (always reserve space) */}
+          <p className="text-xs text-gray-500 mt-2 line-clamp-3 min-h-[3.5rem]">
+            {mosque.description || ' '}
+          </p>
+        </div>
+
+        {/* Bottom actions (fixed position) */}
+        <div className="mt-auto pt-4 flex items-center justify-between">
+          {/* Followers */}
+          <span className="text-sm text-gray-600">
+            {mosque.followersCount ?? 0} followers
+          </span>
+
+          {/* Follow button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // prevent opening mosque
+              // follow / unfollow logic here
+            }}
+            className="px-6 py-1.5 rounded-md text-sm font-medium
+                       bg-emerald-700 text-white hover:bg-emerald-800 transition cursor-pointer"
+          >
+            Follow
+          </button>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+
+          {/* <MosqueListSkeleton /> */}
         </main>
       </div>
     );
 }
-
-export default Homepage;
+}
+export default HomePage;

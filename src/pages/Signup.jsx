@@ -9,6 +9,7 @@ const Signup = () => {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+    const isDev = import.meta.env.VITE_ENV === 'development';
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,7 +39,6 @@ const Signup = () => {
     try {
       const res = await publicAxiosInstance.post('/auths/register', body);
       if(res.status < 400){
-        console.log('Backend response:', res.data);
         setSuccess(`Success: ${res.data.message || 'User registered successfully!'}`);
         setForm({ firstName: '', surname: '', email: '', password: '', gender: '' });
         setLoading(false);
@@ -46,7 +46,9 @@ const Signup = () => {
       }
     } catch (err) {
       setError('Failed to register.');
-      console.error('Registration error:', err.response?.data);
+      if(isDev){
+        console.error('Registration error:', err.response?.data);
+      }
       setLoading(false);
       return;
     }
