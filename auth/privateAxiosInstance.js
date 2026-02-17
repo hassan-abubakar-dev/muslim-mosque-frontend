@@ -6,7 +6,7 @@ const isDev = import.meta.env.VITE_ENV === 'development';
 const privateAxiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL,
     headers: { 'Content-Type': 'application/json' },
-    timeout: 20000,
+    timeout: 40000,
     withCredentials: true,
 });
 
@@ -58,3 +58,9 @@ privateAxiosInstance.interceptors.response.use(
 );
 
 export default privateAxiosInstance;
+
+
+
+
+
+

@@ -47,8 +47,8 @@ if(mosqueLoading){
 }else{
   
     return (
-      <div className="min-h-screen ">
-        <main className="max-w-6xl mx-auto p-6 pt-8 mt-20">
+        <div className="min-h-screen pb-20">
+          <main className="max-w-6xl mx-auto p-6 pt-8 mt-20">
           <h2 className="text-2xl font-semibold mb-4">Featured Mosques</h2>
         {Error && <Toast />}
 
@@ -56,8 +56,12 @@ if(mosqueLoading){
   {mosques.length > 0 && mosques.map((mosque) => (
     <div
       key={mosque.id}
+      role="button"
+      tabIndex={0}
+      aria-label={`Open ${mosque.name} details`}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { openMosque(mosque); } }}
       className="cursor-pointer bg-white rounded-xl shadow-md hover:shadow-lg overflow-hidden
-                 w-full max-w-sm flex flex-col min-h-[360px]"
+                 w-full max-w-sm flex flex-col min-h-[360px] focus:outline-none focus:ring-2 focus:ring-emerald-300"
       onClick={() => openMosque(mosque)}
     >
       {/* Image */}

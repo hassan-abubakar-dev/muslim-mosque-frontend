@@ -1,1 +1,9 @@
 @import "tailwindcss";
+
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital@0;1&family=Scheherazade+New&display=swap');
+
+@layer components {
+  .font-arabic {
+    @apply font-[Amiri,Scheherazade];
+  }
+}
