@@ -2,12 +2,13 @@ import { ChevronRight, LogOut, MessageSquare, Moon, Settings, UserRound } from '
 import privateAxiosInstance from '../../auth/privateAxiosInstance';
 import { useUserContext } from '../context/UserContext';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 
 const ProfileMenu = () => {
   const {setLoggedInUser, setLogOutError} = useUserContext();
   const [showProfileMenu, setShowProfileMenu] = useState(true);
-
+const navigate = useNavigate();
 
 
   const isDev = import.meta.env.VITE_ENV === 'development';
@@ -45,8 +46,8 @@ const ProfileMenu = () => {
                         }}  
                         >
                         
-                        <div className='hover:bg-gray-50 flex py-2 px-3 rounded-xl cursor-pointer'>
-                            <img src={user.avatar} alt="" className='rounded-full cursor-pointer h-9 w-9' />
+                        <div className='hover:bg-gray-50 flex py-2 px-3 rounded-xl cursor-pointer' onClick={() => { navigate('/profile'); setShowProfileMenu(false);}}>
+                            <img src={user.avatar} alt="Profile" className='rounded-full cursor-pointer h-9 w-9' />
                             <p className='text-[16px] font-medium mt-1.5 ml-2 text-black cursor-pointer'>{user.name}</p>
                         </div>
                         <hr className='text-gray-300 w-[95%] justify-self-center my-1' />

@@ -16,102 +16,146 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
 
     const [uploadedFile, setUploadedFile] = useState(null);
 
-    const handleCreateCategory = async (id) => {
+    const handleCreateCategory = async () => {
+  setLoading(true);
 
-        const formData = new FormData();
-        formData.append('name', newCategory.name);
-        formData.append('teacherName', newCategory.teacherName);
-        formData.append('information', newCategory.information);
+  try {
+    let fileKey = null;
 
-        if (uploadedFile) {
-            formData.append('categoryProfile', uploadedFile);
+
+    if (uploadedFile) {
+      const res1 = await privateAxiosInstance.post(
+        `/signed-url/generate-upload-url`,
+        {
+          fileName: uploadedFile.name,
+          fileType: uploadedFile.type,
         }
+      );
 
-        setNewCategory(initialCategory)
-        setLoading(true)
-        try {
-            const res = await privateAxiosInstance.post(`/categories/create-category/${id}`, formData,
-                {
-                    headers: {
-                        "Content-Type": "multipart/form-data"
-                    }
-                }
-            );
-            if (res.status < 400) {
-                setShowModal(false);
-                if (isDev) {
-                    console.log(res.data);
+      const { uploadUrl, key } = res1.data;
 
-                }
-                setCreateCategoryError('');
+      // 🔹 STEP 2: Upload directly to R2
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": uploadedFile.type,
+        },
+        body: uploadedFile,
+      });
 
-                setLoading(false);
-            }
-        }
-        catch (err) {
-            setLoading(false)
+      fileKey = key; // 🔥 important
+    }
 
-
-            if (err.response.data.message === 'Teacher name is required') {
-                setCreateCategoryError('Teacher name is required');
-            } else if (err.response.data.message === 'Category with this name and teacher already exists') {
-                setCreateCategoryError('Category with this name and teacher already exists')
-            } else {
-                setShowModal(false);
-            }
-            if (isDev) {
-                console.error(err.response.data || err.message);
-            } else {
-                setError(true);
-            }
-        }
-
+    // 🔹 STEP 3: Send data to backend
+    const body = {
+      name: newCategory.name,
+      teacherName: newCategory.teacherName,
+      information: newCategory.information,
+      fileKey, // will be null if no image
     };
 
-    const handleUpdateCategory = async () => {
-        const formData = new FormData();
-        formData.append('name', newCategory.name);
-        formData.append('teacherName', newCategory.teacherName);
-        formData.append('information', newCategory.information);
+    const res = await privateAxiosInstance.post(
+      `/categories/create-category/${mosqueFromState.id}`,
+      body
+    );
 
-        if (uploadedFile) {
-            formData.append('categoryProfile', uploadedFile);
+    // success
+    if (res.status < 400) {
+      setShowModal(false);
+      setCreateCategoryError("");
+      setNewCategory(initialCategory);
+    }
+
+  } catch (err) {
+    if (err.response?.data?.message === "Teacher name is required") {
+      setCreateCategoryError("Teacher name is required");
+    } else if (
+      err.response?.data?.message ===
+      "Category with this name and teacher already exists"
+    ) {
+      setCreateCategoryError(
+        "Category with this name and teacher already exists"
+      );
+    } else {
+      setShowModal(false);
+      setError(true);
+    }
+
+    console.error(err.response?.data || err.message);
+  } finally {
+    setLoading(false);
+  }
+};
+
+   const handleUpdateCategory = async () => {
+  setLoading(true);
+
+  try {
+    let fileKey = null;
+
+    // 🔥 STEP 1: upload to R2 IF user selected new image
+    if (uploadedFile) {
+      const res1 = await privateAxiosInstance.post(
+        `/signed-url/generate-upload-url`,
+        {
+          fileName: uploadedFile.name,
+          fileType: uploadedFile.type,
         }
+      );
 
-        setNewCategory(initialCategory)
-        setLoading(true);
+      const { uploadUrl, key } = res1.data;
 
-        try {
-            const res = await privateAxiosInstance.put(`/categories/update-category/${newCategory.id}`, formData,
-                {
-                    headers: {
-                        "Content-Type": "multipart/form-data"
-                    }
-                }
-            );
+      // upload file directly to R2
+      await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": uploadedFile.type,
+        },
+        body: uploadedFile,
+      });
 
-            if (res.status < 400) {
-                setNewCategory(initialCategory);
-                 setShowModal(false);
-                if (isDev) {
-                    console.log(res.data);
+      fileKey = key; // 🔥 this is what backend needs
+    }
 
-                }
-                setLoading(false);
-            }
-        }
-        catch (err) {
-            setLoading(false);
-            if (isDev) {
-                console.log(err.response.data || err.message);
-            }
-            if (err.response.data.message === 'Category with this name and teacher already exists'){
-                setCreateCategoryError('Category with this name and teacher already exists')
-            }else{
-                 setError(true);
-            }
-        }
-    };
+    // 🔥 STEP 2: send data to backend (NO formData anymore)
+    const res = await privateAxiosInstance.put(
+      `/categories/update-category/${newCategory.id}`,
+      {
+        name: newCategory.name,
+        teacherName: newCategory.teacherName,
+        information: newCategory.information,
+        fileKey // null if no new image
+      }
+    );
+
+    if (res.status < 400) {
+      setNewCategory(initialCategory);
+      setShowModal(false);
+      setLoading(false);
+
+      if (isDev) console.log(res.data);
+    }
+
+  } catch (err) {
+    setLoading(false);
+
+    if (isDev) {
+      console.log(err.response?.data || err.message);
+    }
+
+    if (
+      err.response?.data?.message ===
+      "Category with this name and teacher already exists"
+    ) {
+      setCreateCategoryError(
+        "Category with this name and teacher already exists"
+      );
+    } else {
+      setError(true);
+    }
+  }
+};
+
     const cancel = () => {
         setShowModal(false);
         setNewCategory(initialCategory);

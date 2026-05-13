@@ -7,8 +7,9 @@ const RegisterVerification = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-  const {fetchuserProfile, setLoggedInUser} = useUserContext();
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const {fetchUserProfile, setLoggedInUser} = useUserContext();
 const navigate = useNavigate();
 const location = useLocation();
   const isDev = import.meta.env.VITE_ENV === 'development';
@@ -23,11 +24,11 @@ const registeredEmail = location.state?.email || '';
     e.preventDefault();
     setError('');
     setSuccess('');
-    setLoading(true);
+    setVerifyLoading(true);
 
     if (!verificationCode || verificationCode.trim() === '') {
       setError('Please enter the verification code.');
-      setLoading(false);
+      setVerifyLoading(false);
       return;
     }
 
@@ -41,10 +42,10 @@ const registeredEmail = location.state?.email || '';
         console.log('Verification response:', res.data);
         setSuccess(`Success: ${res.data.message || 'Email verified successfully!'}`);
         setVerificationCode('');
-        setLoading(false);
+        setVerifyLoading(false);
         const accessToken = res.data.accessToken; 
         localStorage.setItem('accessToken', accessToken); 
-        await fetchuserProfile();
+        await fetchUserProfile();
         setLoggedInUser(res.data.user)
         navigate('/', {replace: true});
       }
@@ -58,7 +59,7 @@ const registeredEmail = location.state?.email || '';
       } else {
         setError('Failed to verify email: ' + (err.response?.data?.message || err.message));
       }
-      setLoading(false);
+      setVerifyLoading(false);
 
       if(isDev){
         console.error('Verification error:', err.response?.data?.message);
@@ -69,19 +70,20 @@ const registeredEmail = location.state?.email || '';
 
   const handleResendCode = async () => {
     setError('');
-    setLoading(true);
+    setResendLoading(true);
 
     try {
-      const res = await publicAxiosInstance.post('/auths/resend-code');
+      const res = await publicAxiosInstance.post('/auths/new-verification-code', { email: registeredEmail });
       if (res.status < 400) {
         setSuccess('Verification code sent to your email.');
-        setLoading(false);
+        setResendLoading(false);
+        console.log('Resend code response:', res.data);
         return;
       }
     } catch (err) {
-      setError('Failed to resend code: ' + (err.response?.data?.message || err.message));
+      setError('Failed to resend code: ' + (err.response?.data));
       console.error('Resend code error:', err);
-      setLoading(false);
+      setResendLoading(false);
     }
   };
 
@@ -118,10 +120,10 @@ const registeredEmail = location.state?.email || '';
           <div className="pt-2">
             <button
               type="submit"
-              disabled={loading}
+              disabled={verifyLoading}
               className="w-full bg-emerald-700 cursor-pointer text-white px-4 py-2 rounded-md font-semibold hover:bg-emerald-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
             >
-              {loading ? 'Verifying...' : 'Verify Email'}
+              {verifyLoading ? 'Verifying...' : 'Verify Email'}
             </button>
           </div>
         </form>
@@ -131,10 +133,10 @@ const registeredEmail = location.state?.email || '';
           <button
             type="button"
             onClick={handleResendCode}
-            disabled={loading}
+            disabled={resendLoading}
             className="w-full bg-gray-100 text-gray-800 px-4 py-2 rounded-md font-semibold hover:bg-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
           >
-            Resend Verification Code
+           {resendLoading ? 'Resending...' : 'Resend Code'} 
           </button>
         </div>
 

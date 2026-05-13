@@ -1,10 +1,10 @@
 import React from 'react';
 
-const AudioPlayerModal = ({ lecture, url, onClose }) => {
+const AudioPlayerModal = ({ lecture, onClose }) => {
   if (!lecture) return null;
 
   // mock audio src; in real app this should come from lecture metadata
-  const src = url;
+  const src = lecture.url;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">

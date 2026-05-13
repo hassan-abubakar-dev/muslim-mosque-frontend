@@ -3,34 +3,38 @@ import Header from '../components/Header';
 import MosqueListSkeleton from '../components/loadingSkeletons/MosqueListSkeleton';
 import ProfileImage from '../assets/profile.jpg'
  import { MapPin } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import publicAxiosInstance from '../../auth/publicAxiosInstance';
 import { useNavigate } from 'react-router-dom';
 import Toast from '../components/Toast';
+import privateAxiosInstance from '../../auth/privateAxiosInstance';
+import { UserContext } from '../context/UserContext';
 
 const HomePage = () => {
 
   const [mosques, setMosques] = useState([]);
-  const [mosqueLoading, setMosqLoading] = useState(false); 
+  const [mosqueLoading, setMosqueLoading] = useState(false); 
   const navigate = useNavigate();
   const isDev = import.meta.env.VITE_ENV === 'development';
   const [Error, setError] = useState(false);
+  const { loggedInUser } = useContext(UserContext);
   const fetchMosques = async() => {
-    setMosqLoading(true)
+    setMosqueLoading(true)
     try{
       const res = await publicAxiosInstance.get('/mosques/get-mosques');
       if(res.status < 400){
-         setMosques(res.data.mosques)
-        
+         setMosques(res.data.mosques);
+         setError(false);
+         console.log('Fetched mosques:', res.data.mosques);
       }
     }
     catch(err){
      if(isDev){
-       console.log(err.response.data || err.message);
+       console.log(err?.response?.data || err.message);
      }
       
     }finally{
-      setMosqLoading(false);
+      setMosqueLoading(false);
     }
   };
 
@@ -38,9 +42,28 @@ const HomePage = () => {
     navigate(`/mosque/${mosque.id}`, {state: {mosque}});
   };
 
+  const handleFollowMosque = async (e, mosque) => {
+    e.stopPropagation(); // prevent opening mosque
+    try {
+      const res = await privateAxiosInstance.post(`/mosques/${mosque.id}/follow`);
+      if (res.status < 400) {
+        console.log('Followed successfully', res.data);
+        // Optionally, update the local state to reflect the follow
+      
+      }
+    } catch (err) {
+      if (isDev) {
+        console.log(err.response.data.message || err.message);
+      }
+    }
+  };
+
   useEffect(() => {
     fetchMosques();
   }, []);
+
+ 
+  
 
 if(mosqueLoading){
   return <MosqueListSkeleton />
@@ -109,24 +132,31 @@ if(mosqueLoading){
         <div className="mt-auto pt-4 flex items-center justify-between">
           {/* Followers */}
           <span className="text-sm text-gray-600">
-            {mosque.followersCount ?? 0} followers
+            {mosque.followersCount} {mosque.followersCount > 1 ? 'followers' : 'follower'}
           </span>
 
-          {/* Follow button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation(); // prevent opening mosque
-              // follow / unfollow logic here
-            }}
-            className="px-6 py-1.5 rounded-md text-sm font-medium
-                       bg-emerald-700 text-white hover:bg-emerald-800 transition cursor-pointer"
-          >
-            Follow
-          </button>
+          {/* Follow button or Following text */}
+          {loggedInUser && loggedInUser.managedMosques?.some(m => String(m.id) === String(mosque.id)) ? (
+            <span className="text-sm text-emerald-600 font-medium">
+              Admin
+            </span>
+          ) : loggedInUser && mosque.isFollowing === 1 ? (
+            <span className="text-sm text-emerald-600 font-medium">
+              Following
+            </span>
+          ) : (
+            <button
+              onClick={(e) => handleFollowMosque(e, mosque)}
+              className="px-6 py-1.5 rounded-md text-sm font-medium bg-emerald-700 text-white hover:bg-emerald-800 transition cursor-pointer"
+            >
+              Follow
+            </button>
+          )}
         </div>
       </div>
     </div>
   ))}
+
 </div>
 
 

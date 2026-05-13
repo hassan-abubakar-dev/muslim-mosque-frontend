@@ -1,25 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import MosqueLoadingSkeleton from '../../components/loadingSkeletons/MosqueLoadingSkeleton';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance';
 import Toast from '../../components/Toast';
-import { MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Calendar, MoreVertical, Pencil, Trash2, Bell, Pin } from 'lucide-react';
 import MosqueProfile from './MosqueProfile';
 import Model from './Model';
+import AnnouncementModal from './AnnouncementModal';
+import CreateAnnouncementModal from './CreateAnnouncementModal';
+import mockNotifications from './notificationsData';
 import InlineLoader from '../../components/loadingSkeletons/InlineLoader';
-
+import { UserContext } from '../../context/UserContext';
+import truncateByWords from '../../util/splitWord';
 
 const Mosque = () => {
   const [showModal, setShowModal] = useState(false);
+  const [showCreateAnnouncementModal, setShowCreateAnnouncementModal] = useState(false);
   const [isValidMosque, setIsValidMosque] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [visibleNotificationsCount, setVisibleNotificationsCount] = useState(5);
 
   const isDev = import.meta.env.VITE_ENV === 'development';
 
   const { id } = useParams();
   const location = useLocation();
 
-  const mosqueFromState = location.state?.mosque || null;
+  const [mosqueFromState, setMosqueFromState] = useState(location.state?.mosque || null);
   const [Error, setError] = useState(false);
   const [categories, setCategories] = useState([]);
   const [openMenuId, setOpenMenuId] = useState(false);
@@ -30,6 +38,25 @@ const Mosque = () => {
   
 
   const [isEdit, setIsEdit] = useState(false);
+  const { loggedInUser } = useContext(UserContext);
+
+  // Mock announcements data
+  const mockAnnouncements = [
+    {
+      id: 1,
+      title: 'Ramadan Prayer Schedule',
+      description: 'Join us for special Ramadan prayers every evening. Full description here...',
+      image: null,
+      createdAt: '2024-03-15'
+    },
+    {
+      id: 2,
+      title: 'Community Iftar',
+      description: 'Community Iftar event this Friday. Bring your family!',
+      image: 'https://example.com/image.jpg',
+      createdAt: '2024-03-10'
+    }
+  ];
 
   const fetchAllCategories = async (id) => {
     try {
@@ -51,9 +78,6 @@ const Mosque = () => {
 
 
   }
-
-
-  // validation
 
 
   useEffect(() => {
@@ -118,7 +142,102 @@ const Mosque = () => {
 
         {Error && <Toast />}
 
-        <MosqueProfile />
+        <MosqueProfile mosque={mosqueFromState} />
+
+        {/* Announcement Buttons */}
+        <div className="max-w-6xl mx-auto mb-6 flex items-center gap-4 relative">
+          <button
+            onClick={() => navigate(`/mosque/${id}/announcements`, {state: {mosqueFromState}})}
+            className="bg-emerald-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-emerald-700 cursor-pointer"
+          >
+            Announcements
+          </button>
+          {loggedInUser && loggedInUser.managedMosques?.some(m => String(m.id) === String(mosqueFromState.id)) && (
+            <button
+              onClick={() => setShowCreateAnnouncementModal(true)}
+              className="bg-emerald-500 text-white px-4 py-2 rounded-md font-semibold hover:bg-emerald-600 cursor-pointer"
+            >
+              Create Announcement
+            </button>
+          )}
+
+          <div className="relative ml-auto">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                setShowNotifications((prev) => !prev);
+              }}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50"
+            >
+              <Bell size={20} />
+            </button>
+
+            {showNotifications && (
+              <div className="absolute right-0 top-14 z-50 min-w-[320px] max-w-[360px] overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-2xl">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                  <button
+                    onClick={() => {
+                      setShowNotifications(false);
+                      navigate(`/mosque/${id}/notifications`, { state: { mosqueFromState } });
+                    }}
+                    className="text-sm font-semibold text-emerald-600 hover:text-emerald-700"
+                  >
+                    See all
+                  </button>
+                </div>
+                <div className="max-h-96 space-y-2 overflow-y-auto p-3">
+                  {mockNotifications.slice(0, visibleNotificationsCount).map((notification) => (
+                    <div key={notification.id} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+                      <h4 className="text-sm font-semibold text-gray-900">{notification.title}</h4>
+                      <p className="text-sm text-gray-600 mt-2">{notification.description}</p>
+                    </div>
+                  ))}
+                </div>
+                {visibleNotificationsCount < mockNotifications.length && (
+                  <div className="border-t border-gray-200 p-3">
+                    <button
+                      onClick={() => setVisibleNotificationsCount(mockNotifications.length)}
+                      className="w-full rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                    >
+                      Load More
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recent Announcement Card */}
+        {mockAnnouncements.length > 0 && (
+          <div className="max-w-6xl mx-auto mb-6">
+            <div
+              className="relative bg-white p-4 rounded-xl shadow-md border-l-4 border-emerald-500 cursor-pointer hover:shadow-lg transition"
+              onClick={() => setSelectedAnnouncement(mockAnnouncements[0])}
+            >
+              <div className="absolute right-4 top-4 rounded-full bg-emerald-600 p-2 text-white shadow-lg">
+                <Pin size={16} />
+              </div>
+              <h3 className="text-lg font-semibold text-emerald-700">{mockAnnouncements[0].title}</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {/* Mobile: 12 words limit */}
+                <span className="md:hidden">
+                  {truncateByWords(mockAnnouncements[0].description, 6)}
+                </span>
+                {/* MD and above: 20 words limit */}
+                <span className="hidden md:inline">
+                  {truncateByWords(mockAnnouncements[0].description, 16)}
+                </span>
+              </p>
+              <div className="flex items-center gap-2 mt-3">
+                <Calendar size={16} className="text-emerald-600" />
+                <p className="text-sm font-semibold text-emerald-700">21/2/2025</p>
+              </div>
+            </div>
+          </div>
+        )}
 
 
         {showModal && (
@@ -133,16 +252,38 @@ const Mosque = () => {
           />
         )}
 
+        {showCreateAnnouncementModal && (
+          <CreateAnnouncementModal
+            isOpen={showCreateAnnouncementModal}
+            onClose={() => setShowCreateAnnouncementModal(false)}
+            mosqueFromState={mosqueFromState}
+            onCreated={() => {
+              setShowCreateAnnouncementModal(false);
+            }}
+          />
+        )}
+
+        {/* Announcement Modal */}
+        <AnnouncementModal
+          announcement={selectedAnnouncement}
+          isOpen={!!selectedAnnouncement}
+          onClose={() => setSelectedAnnouncement(null)}
+        />
+
 
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-2xl font-semibold text-emerald-800">Islamic Knowledge Categories</h1>
-            <button className="bg-emerald-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-emerald-800 cursor-pointer" onClick={() => { setShowModal(true), setIsEdit(false) }}>
+            {loggedInUser && loggedInUser.managedMosques?.some(m => String(m.id) === String(mosqueFromState.id)) && (
+                 <button className="bg-emerald-700 text-white px-4 py-2 rounded-md font-semibold hover:bg-emerald-800 cursor-pointer" onClick={() => { setShowModal(true), setIsEdit(false) }}>
               + Create Category
             </button>
+            )}
+          
+        
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-50">
             {categories.map((cat) => (
               <div
                 key={cat.id}

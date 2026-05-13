@@ -9,14 +9,16 @@ import Header from './components/Header'
 import FooterNav from './components/FooterNav'
 import Profile from './pages/Profile';
 import Mosque from './pages/mosque/Mosque';
+import AnnouncementsPage from './pages/mosque/AnnouncementsPage';
+import NotificationPage from './pages/mosque/NotificationPage';
 import AppSkeletonLoader from './components/loadingSkeletons/AppSkeletonLoader';
 import { useUserContext } from './context/UserContext';
 import CategoryLecture from './pages/categoryLecture/CategoryLacture';
 import VideoPlayer from './pages/categoryLecture/VideoPlayer';
 import Adzkar from './pages/Adzkar';
-import Qiuran from './pages/Qiuran';
-import Surah from './pages/Surah';
-
+import Qiuran from './quran/quran';
+import Surah from './quran/Surah';
+import AboutPage from './pages/About';
 
 
 function App() {
@@ -39,6 +41,9 @@ function App() {
         <Route path='/register' element={<RegisterMosque />} />
         <Route path='/login' element={<Login />} />
         <Route path='/mosque/:id' element={<Mosque />} />
+        <Route path='/mosque/:id/announcements' element={<AnnouncementsPage />} />
+        <Route path='/mosque/:id/notifications' element={<NotificationPage />} />
+        <Route path='/notifications' element={<NotificationPage />} />
         <Route path='/profile' element={<Profile />} />
         <Route path='/category/lacture' element={<CategoryLecture />} />
         <Route path='/video-player' element={<VideoPlayer />} />
@@ -47,6 +52,7 @@ function App() {
         <Route path='/dua' element={<div className="flex items-center justify-center min-h-screen text-gray-500">📌 Coming Soon...</div>} />
         <Route path='/quran' element={<Qiuran />} />
         <Route path='/surah/:id' element={<Surah />} />
+         <Route path='/about' element={<AboutPage />} />
       
       </Routes>
       <FooterNav />
@@ -56,3 +62,5 @@ function App() {
   }
 }
 export default App
+
+

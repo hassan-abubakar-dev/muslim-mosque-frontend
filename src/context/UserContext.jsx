@@ -14,69 +14,74 @@ export const ContextProvider = ({ children}) => {
     const [logOutError, setLogOutError] = useState(false);
 
     const fetchUserData = async () => {
-setAppLoading(true);
-       try{
-         const res = await privateAxiosInstance.get('/users/login-user');
-        if(res.status < 400){
-            setAppLoading(false);
-            setLoggedInUser(res?.data.user);
-            setAuthLoading(false);
+      setAppLoading(true);
+      try {
+        const res = await privateAxiosInstance.get('/users/login-user');
+        if (res.status < 400) {
+          setLoggedInUser(res?.data.user);
+          if (isDev) {
+            console.log('Fetched user data:', res.data.user);
+          }
+          return true;
         }
-       }catch(err){
+      } catch (err) {
+        if (isDev) {
+          console.error('Failed to fetch user data:', err.response?.data?.message || err.message);
+        }
+      } finally {
         setAppLoading(false);
-        setAuthLoading(false);
-        if(isDev){
-            console.error('Failed to fetch user data:', err.response?.data?.message || err.message);
-        }
-       }
+      }
+
+      return false;
     };
 
     const fetchUserProfile = async () => {
-        setProfileLoading(true);
-        try{
-            const res = await privateAxiosInstance.get('/profiles/user-profile');
-            if(res.status < 400){
-                setProfileLoading(false);
-                setUserProfile(res.data.userProfile.image)
-            }
+      setProfileLoading(true);
+      try {
+        const res = await privateAxiosInstance.get('/profiles/user-profile');
+        if (res.status < 400) {
+          setUserProfile(res.data.userProfile.image);
         }
-        catch(err){
-            setProfileLoading(false);
-            if(isDev){
-                console.error('Failed to fetch user data', err.response?.data?.message || err.message);
-            }
+      } catch (err) {
+        if (isDev) {
+          console.error('Failed to fetch user profile:', err.response?.data?.message || err.message);
         }
-    }
+      } finally {
+        setProfileLoading(false);
+      }
+    };
 
     useEffect(() => {
-    const accessToken = localStorage.getItem('accessToken');
+      const accessToken = localStorage.getItem('accessToken');
 
-        const fetchPrivateData = async () => {
-            await fetchUserProfile();
-            // other data need login
-        };
-
-        const fetchPublicData = async() => {
-            // other data not need login
+      const fetchPrivateData = async () => {
+        const isLoggedIn = await fetchUserData();
+        if (isLoggedIn) {
+          await fetchUserProfile();
+          // other data that need login can be fetched here
         }
-       
-        (async () => {
-            await fetchUserData();
+        setAuthLoading(false);
+      };
 
-            if(accessToken){
-            fetchPrivateData();
-          }
+      const fetchPublicData = async () => {
+        // other data not need login
+      };
 
-          fetchPublicData();
-        })();
+      (async () => {
+        if (accessToken) {
+          await fetchPrivateData();
+        } else {
+          setAuthLoading(false);
+        }
 
-          
-        
-    }, [])
+        await fetchPublicData();
+      })();
+    }, []);
+
   return (
     <UserContext.Provider value={{ 
         loggedInUser, setLoggedInUser, fetchUserData, profileLoading, setProfileLoading, userProfile, fetchUserProfile,  appLoading,
-        authLoading, setAuthLoading, logOutError, setLogOutError
+        authLoading, setAuthLoading, logOutError, setLogOutError, setUserProfile
  }}>
       {children}
     </UserContext.Provider>
@@ -87,3 +92,5 @@ setAppLoading(true);
 export const useUserContext = () => {
   return useContext(UserContext);
 };
+
+export { UserContext };

@@ -46,11 +46,15 @@ const getFileDuration = (file) => {
   });
 };
 
+
+
+// file change handler
   const handleFileChange = (e) => {
     const f = e.target.files && e.target.files[0];
     setFile(f || null);
   };
 
+  // submit handler
 const handleSubmit = async (e) => {
   e.preventDefault();
   setError('');
@@ -69,43 +73,58 @@ const handleSubmit = async (e) => {
   setLoading(true);
 
   try {
-    // 1️⃣ Send file info to backend to get signed PUT URL
-    const res1 = await privateAxiosInstance.post(`/lectures/generate-upload-url/${cat?.id}`, {
-      fileName: file.name,
-      fileType: file.type,
-      type
-    });
+    // 1️⃣ Get upload URL from backend
+    const res1 = await privateAxiosInstance.post(
+      `/signed-url/generate-upload-url`,
+      {
+        fileName: file.name,
+        fileType: file.type
+      }
+    );
 
     const { uploadUrl, key } = res1.data;
-        const duration = await getFileDuration(file);
 
-    await fetch(uploadUrl, {
+    // 2️⃣ Get duration
+    const duration = await getFileDuration(file);
+
+    // 3️⃣ Upload file to R2
+    const uploadRes = await fetch(uploadUrl, {
       method: 'PUT',
-      headers: {
-        'Content-Type': file.type
-      },
-      body: file
+       headers: {
+    "Content-Type": file.type,
+  },
+      body: file,
     });
-
-    // 3️⃣ Save lecture metadata in backend
-    const res2 = await privateAxiosInstance.post(`/lectures/save-metadata/${cat?.id}`, {
-      title,
-      type,
-      key,
-      duration
-    });
-
-    if(res2.status < 400){
-      console.log(res2, 'save metadata res');
+ 
+    if (!uploadRes.ok) {
+      // throw new Error("Upload to R2 failed");
+      setError('File upload failed. Please try again.');
+      return;
     }
 
-    setLoading(false);
-    setSuccess('Lecture uploaded successfully.');
+    // 4️⃣ Save lecture metadata in our database
+    const res2 = await privateAxiosInstance.post(
+      `/lectures/save-metadata/${cat?.id}`,
+      {
+        title,
+        type,
+        key,
+        duration,
+      }
+    );
 
+    if (res2.status <= 400) {
+        console.log('Lecture metadata saved successfully', res2);
+      }
+
+
+
+    setSuccess('Lecture uploaded successfully.');
   } catch (err) {
-    console.error(err.response || err, 'Upload error');
-    setLoading(false);
+    console.error(err.response?.data || err.message);
     setError('Upload failed. Try again.');
+  } finally {
+    setLoading(false);
   }
 };
 

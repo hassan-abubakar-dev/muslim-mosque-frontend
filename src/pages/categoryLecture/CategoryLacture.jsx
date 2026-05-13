@@ -1,9 +1,7 @@
 
-
-
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Search, Video, Headphones, MoreVertical, Bookmark, Share2, Download } from "lucide-react";
+import { Search, Video, Headphones, MoreVertical, Bookmark, Share2, Download, Trash2 } from "lucide-react";
 import CategoryLactureHeader from "./CateoryLactureHeader";
 import UploadLactureModel from './UploadLactureModel';
 import AudioPlayerModal from './AudioPlayerModal';
@@ -20,28 +18,6 @@ const CategoryLecture= () => {
 
   const cat = location.state?.cat || null;
 
-const fetchLactures = async() => {
- try{
-  const res = await privateAxiosInstance.get(`/lectures/all/${cat?.id}`);
- if(res.status < 400){  
-    console.log(res.data, 'fetch lectures res');
-  setLectures(res.data.lectures);
-}
- }
- catch(err){
-  console.log(err, 'fetch lectures err');
- 
-}
-
-};
-
-useEffect(() => {
-  if (cat?.id) {
-    fetchLactures();
-  }
-}, [cat?.id]);
-
-
   const [openMenuId, setOpenMenuId] = useState(null);
 const [lectureToDelete, setLectureToDelete] = useState(null);
 const [showUploadTypeModal, setShowUploadTypeModal] = useState(false);
@@ -55,36 +31,42 @@ const formatDuration = (seconds) => {
   return `${m}:${s < 10 ? "0" : ""}${s}`;
 };
 
-const handlePlayLecture = async (lecture) => {
-  if (lecture.type === "audio") {
-    try {
-      const res = await privateAxiosInstance.get(
-        `/lectures/play/${lecture.id}`
-      );
+const fetchLectures = async() => {
+  try{
+    const res = await privateAxiosInstance.get(`/lectures/get-lectures/${cat?.id}?page=1&limit=10`);
+    setLectures(res.data.lectures);
+  }
+  catch(err){
+    console.error(err.response?.data || err.message);
+  }
+}
 
-      if (res.status < 400) {
-        console.log(res.data.signedUrl);
-        
-        setAudioModalLecture({
-          ...lecture,
-          url: res.data.signedUrl,
-        });
-      }
-    } catch (err) {
-      console.error("Failed to play lecture", err.response.data);
+
+const handleDeleteLecture = async (lectureId) => {
+  try {
+    const res = await privateAxiosInstance.delete(`/lectures/delete-lecture/${lectureId}`);
+    if (res.status < 400) {
+      // remove from local state
+      setLectures(prev => prev.filter(l => l.id !== lectureId));
+      setLectureToDelete(null);
+      console.log('Lecture deleted successfully', res.data);
     }
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+  }
+};
+
+// play video or audio navigation
+const handlePlayLecture = (lecture) => {
+  if (lecture.type === "audio") {
+    setAudioModalLecture(lecture);
   } else {
-       const res = await privateAxiosInstance.get(
-        `/lectures/play/${lecture.id}`
-      );
-  if(res.status < 400){
-      navigate("/video-player", {
+    navigate("/video-player", {
       state: {
         title: lecture.title,
-        src: res.data.signedUrl,
+        src: lecture.url,
       },
     });
-  }
   }
 };
 
@@ -106,11 +88,19 @@ const handlePlayLecture = async (lecture) => {
     return data;
   }, [activeTab, search, lectures]);
 
+
+  useEffect(() => {
+    if (cat) {
+      fetchLectures();
+    }
+
+  }, [cat]);
+
   return (
     <div className="min-h-screen bg-gray-100 p-6 mt-24">
       
       {/* Category Header */}
-    <CategoryLactureHeader />
+    <CategoryLactureHeader /> 
 
     {/* Audio Player Modal */}
 
@@ -234,39 +224,16 @@ const handlePlayLecture = async (lecture) => {
 
     {/* Admin menu (visible for now) */}
     <button
-      onClick={() =>
-        setOpenMenuId(openMenuId === lecture.id ? null : lecture.id)
-      }
-      className="relative"
-    >
-      <MoreVertical className="w-5 h-5" />
-    </button>
-  </div>
-
-  {/* Admin dropdown */}
-  {openMenuId === lecture.id && (
-    <div className="absolute right-4 top-12 bg-white border rounded-lg shadow-lg w-36 z-20">
-      <button
-        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
-        onClick={() => {
-          setOpenMenuId(null);
-          // later: open edit mode
-        }}
-      >
-        ✏️ Edit
-      </button>
-
-      <button
-        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
-        onClick={() => {
+      onClick={() => {
           setOpenMenuId(null);
           setLectureToDelete(lecture);
         }}
-      >
-        🗑 Delete
-      </button>
-    </div>
-  )}
+      className="relative"
+    >
+      <Trash2 className="w-5 h-5" />
+    </button>
+  </div>
+
 </div>
 
         ))}
@@ -303,6 +270,7 @@ const handlePlayLecture = async (lecture) => {
           onClick={() => {
             // later: deleteLecture(lectureToDelete.id)
             setLectureToDelete(null);
+            handleDeleteLecture(lectureToDelete.id);
           }}
           className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
         >

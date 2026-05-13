@@ -7,10 +7,11 @@ const FooterNav = () => {
 
   const navItems = [
     { id: 'home', label: 'Home', icon: Home, route: '/' },
+      { id: 'dua', label: 'My mosques', icon: Heart, route: '/dua' },
     { id: 'quran', label: 'Qur\'an', icon: Book, route: '/quran' },
     { id: 'adhkar', label: 'Adhkar', icon: Moon, route: '/adhkar' },
     { id: 'prayer', label: 'Prayer', icon: Clock, route: '/prayer' },
-    { id: 'dua', label: 'Dua', icon: Heart, route: '/dua' },
+
   ];
 
   const isActive = (route) => location.pathname === route;
