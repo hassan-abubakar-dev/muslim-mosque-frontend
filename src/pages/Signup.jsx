@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Header from '../components/Header';
 import publicAxiosInstance from '../../auth/publicAxiosInstance';
 import { useNavigate } from 'react-router-dom';
+import MasjibaLogoMark from '../assets/masjiba-logo-mark.png';
 
 const Signup = () => {
   const [form, setForm] = useState({ firstName: '', surname: '', email: '', password: '', gender: '' });
@@ -42,7 +43,7 @@ const Signup = () => {
         setSuccess(`Success: ${res.data.message || 'User registered successfully!'}`);
         setForm({ firstName: '', surname: '', email: '', password: '', gender: '' });
         setLoading(false);
-        navigate('/verify-email', { state: { email: form.email }});
+        navigate('/verify-email', { state: { email: form.email, flowType: 'registration' } });
       }
     } catch (err) {
       setError('Failed to register.');
@@ -54,41 +55,50 @@ const Signup = () => {
     }
   };
 
-  return (
+ return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-white/95 rounded-xl shadow-lg p-6 mt-20">
-        <h1 className="text-2xl font-semibold text-emerald-800">Create an account</h1>
-        <p className="text-sm text-gray-600 mt-1">Sign up to register your mosque or join the community.</p>
+        
+        {/* BRANDING LOGO SECTION */}
+        <div className="flex flex-col items-center text-center mb-5">
+          <img 
+            src={MasjibaLogoMark} 
+            alt="Masjiba Logo" 
+            className="h-20 w-auto object-contain" 
+          />
+        </div>
+
+        <h1 className="text-2xl font-semibold text-emerald-800 text-center">Create an account</h1>
+        <p className="text-sm text-gray-600 mt-1 text-center">Sign up to register your mosque or join the community.</p>
 
         <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-          {error && <div className="text-sm text-red-600">{error}</div>}
-          {success && <div className="text-sm text-emerald-700">{success}</div>}
+          {error && <div className="text-sm text-red-600 bg-red-50 p-2 rounded text-center">{error}</div>}
+          {success && <div className="text-sm text-emerald-700 bg-emerald-50 p-2 rounded text-center">{success}</div>}
 
           <div className="flex gap-4">
             <label className="flex-1">
               <span className="text-gray-700 text-sm">First Name *</span>
-              <input name="firstName" value={form.firstName} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300" placeholder="John" />
+              <input name="firstName" value={form.firstName} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm" placeholder="John" />
             </label>
             <label className="flex-1">
               <span className="text-gray-700 text-sm">Surname *</span>
-              <input name="surname" value={form.surname} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300" placeholder="Doe" />
+              <input name="surname" value={form.surname} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm" placeholder="Doe" />
             </label>
           </div>
-          
 
           <label className="block">
             <span className="text-gray-700 text-sm">Email</span>
-            <input name="email" type="email" value={form.email} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300" placeholder="you@example.com" />
+            <input name="email" type="email" value={form.email} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm" placeholder="you@example.com" />
           </label>
 
           <label className="block">
             <span className="text-gray-700 text-sm">Password</span>
-            <input name="password" type="password" value={form.password} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300" placeholder="Enter a strong password" />
+            <input name="password" type="password" value={form.password} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm" placeholder="Enter a strong password" />
           </label>
 
           <label className="block">
             <span className="text-gray-700 text-sm">Gender *</span>
-            <select name="gender" value={form.gender} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300">
+            <select name="gender" value={form.gender} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm bg-white">
               <option value="" disabled>Select Gender</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -96,13 +106,27 @@ const Signup = () => {
           </label>
 
           <div className="pt-2">
-            <button type="submit" disabled={loading} className="w-full bg-emerald-700 cursor-pointer text-white px-4 py-2 rounded-md font-semibold hover:bg-emerald-800 disabled:bg-gray-400 disabled:cursor-not-allowed">
+            <button type="submit" disabled={loading} className="w-full bg-emerald-700 cursor-pointer text-white px-4 py-2 rounded-md font-semibold hover:bg-emerald-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition text-sm">
               {loading ? 'Signing up...' : 'Sign Up'}
             </button>
           </div>
         </form>
 
-        <p className="text-xs text-gray-500 mt-4">By signing up you agree to our terms and privacy policy. This is a mock signup form for demo purposes.</p>
+        {/* 🛠️ NAVIGATION TO LOGIN */}
+        <div className="mt-4 text-center">
+          <p className="text-sm text-gray-600">
+            Already have an account?{" "}
+            <button
+              type="button"
+              onClick={() => navigate("/login")}
+              className="text-sm font-semibold text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer"
+            >
+              Log In
+            </button>
+          </p>
+        </div>
+
+        <p className="text-xs text-gray-500 mt-5 text-center">By signing up you agree to our terms and privacy policy. This is a mock signup form for demo purposes.</p>
       </div>
     </div>
   );

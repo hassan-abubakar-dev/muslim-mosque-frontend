@@ -1,18 +1,31 @@
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useUserContext } from '../../context/UserContext';
 import MosqueProfile from './MosqueProfile';
-import mockNotifications from './notificationsData';
+
 
 const NotificationPage = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { followedMosques = [] } = useUserContext();
 
   const mosque = location?.state?.mosqueFromState || null;
+  const notifications = location?.state?.notifications || [];
+
   const backPath = id
     ? `/mosque/${id}`
     : location?.state?.mosqueId
     ? `/mosque/${location.state.mosqueId}`
     : '/';
+
+  const formatDate = (iso) => {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    } catch (e) {
+      return '';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 mt-20">
@@ -35,12 +48,33 @@ const NotificationPage = () => {
         {mosque && <MosqueProfile mosque={mosque} />}
 
         <div className="mt-8 space-y-4">
-          {mockNotifications.map((notification) => (
-            <div key={notification.id} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-semibold text-gray-900">{notification.title}</h2>
-              <p className="text-sm text-gray-600 mt-2">{notification.description}</p>
-            </div>
-          ))}
+          {notifications.length > 0 ? (
+            notifications.map((notification) => {
+              const mosqueData = followedMosques.find((m) => String(m.id) === String(notification.mosqueId));
+              return (
+                <div key={notification.id} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={mosqueData?.mosqueProfile?.image || '/'}
+                      alt={mosqueData?.name || 'Mosque'}
+                      className="h-14 w-14 rounded-lg object-cover bg-slate-100"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-gray-900 truncate">
+                          {mosqueData?.name || notification.mosqueId}
+                        </h4>
+                        <span className="text-xs text-gray-400">{formatDate(notification.createdAt)}</span>
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="p-4 text-center text-sm text-gray-500">No notifications found.</div>
+          )}
         </div>
       </div>
     </div>

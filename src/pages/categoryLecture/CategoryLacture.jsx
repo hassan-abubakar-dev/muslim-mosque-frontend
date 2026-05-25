@@ -3,9 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Video, Headphones, MoreVertical, Bookmark, Share2, Download, Trash2 } from "lucide-react";
 import CategoryLactureHeader from "./CateoryLactureHeader";
-import UploadLactureModel from './UploadLactureModel';
+import UploadLectureModal from './UploadLectureModal';
 import AudioPlayerModal from './AudioPlayerModal';
 import privateAxiosInstance from "../../../auth/privateAxiosInstance";
+import handleBookmarkClick from "../../util/bookmark.js";
+import handleVideoLibraryToggle from "../../util/videoLibrary.js";
 
 
 
@@ -18,12 +20,93 @@ const CategoryLecture= () => {
 
   const cat = location.state?.cat || null;
 
+
   const [openMenuId, setOpenMenuId] = useState(null);
 const [lectureToDelete, setLectureToDelete] = useState(null);
 const [showUploadTypeModal, setShowUploadTypeModal] = useState(false);
+
+const [videoForLibrary, setVideoForLibrary] = useState(null);
+const [isLibraryMutating, setIsLibraryMutating] = useState(false);
  
   const [audioModalLecture, setAudioModalLecture] = useState(null);
   const navigate = useNavigate();
+
+  const handleBookmarkToggle = async (lectureId) => {
+    try {
+      // 1. Trigger API toggle request to backend 
+      await handleBookmarkClick(lectureId);
+      
+      // 2. Map through lectures and instantly toggle the bookmark array state
+      setLectures(prevLectures => 
+        prevLectures.map(lecture => {
+          if (lecture.id === lectureId) {
+            const hasBookmark = lecture.bookmarks && lecture.bookmarks.length > 0;
+            
+            return {
+              ...lecture,
+              // If it was bookmarked, empty the array to remove it. 
+              // If it wasn't, add a mock object to turn the icon green!
+              bookmarks: hasBookmark ? [] : [{ id: 'temp-id', lectureId }]
+            };
+          }
+          return lecture;
+        })
+      );
+    } catch (err) {
+      console.error("Failed to toggle bookmark state:", err);
+    }
+  };
+
+  const handleMediaDownloadClick = (lecture) => {
+  if (lecture.type === 'video') {
+    // Intercept video and prompt user with our explanation modal
+    setVideoForLibrary(lecture);
+  } else {
+    // Standard native browser download for MP3 files
+    if (lecture.url) {
+      const link = document.createElement('a');
+      link.href = lecture.url;
+      link.setAttribute('download', `${lecture.title}.mp3`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } else {
+      alert("Audio file link not available.");
+    }
+  }
+};
+
+const handleConfirmLibrarySave = async () => {
+  if (!videoForLibrary) return;
+  setIsLibraryMutating(true);
+  
+  try {
+    // Call our brand new shared utility function!
+    const data = await handleVideoLibraryToggle(videoForLibrary.id);
+    
+    if (data.status === 'success') {
+      // Instantly synchronize the UI icon checkmark state array
+      setLectures(prevLectures => 
+        prevLectures.map(lecture => {
+          if (lecture.id === videoForLibrary.id) {
+            const hasBookmark = lecture.bookmarks && lecture.bookmarks.length > 0;
+            return {
+              ...lecture,
+              bookmarks: hasBookmark ? [] : [{ id: 'temp-lib-id', lectureId: lecture.id }]
+            };
+          }
+          return lecture;
+        })
+      );
+    }
+    setVideoForLibrary(null);
+  } catch (err) {
+    console.error("Failed running library confirmation handler:", err);
+  } finally {
+    setIsLibraryMutating(false);
+  }
+};
+
 
 const formatDuration = (seconds) => {
   const m = Math.floor(seconds / 60);
@@ -35,6 +118,7 @@ const fetchLectures = async() => {
   try{
     const res = await privateAxiosInstance.get(`/lectures/get-lectures/${cat?.id}?page=1&limit=10`);
     setLectures(res.data.lectures);
+    console.log('Fetched lectures:', res.data.lectures);
   }
   catch(err){
     console.error(err.response?.data || err.message);
@@ -63,9 +147,8 @@ const handlePlayLecture = (lecture) => {
   } else {
     navigate("/video-player", {
       state: {
-        title: lecture.title,
-        src: lecture.url,
-      },
+        lecture
+      }
     });
   }
 };
@@ -119,9 +202,11 @@ const handlePlayLecture = (lecture) => {
 
 
 {showUploadTypeModal && (
- <UploadLactureModel
+ <UploadLectureModal
     setShowUploadTypeModal={setShowUploadTypeModal}
     cat={cat}
+    fetchLectures={fetchLectures}
+    setLectures={setLectures}
  />
 )}
 
@@ -172,6 +257,7 @@ const handlePlayLecture = (lecture) => {
         )}
 
         {lectures.length > 0 && filteredLectures.map((lecture) => (
+          
         <div
   key={lecture.id}
   className="relative bg-white rounded-xl shadow p-4 flex justify-between items-center hover:shadow-md transition"
@@ -181,7 +267,7 @@ const handlePlayLecture = (lecture) => {
     <button
       type="button"
       aria-label={lecture.type === 'audio' ? `Play audio: ${lecture.title}` : `Play video: ${lecture.title}`}
-    onClick={() => handlePlayLecture(lecture)}
+   onClick={() => handlePlayLecture(lecture)}
   onKeyDown={(e) => {
     if (e.key === "Enter" || e.key === " ") {
       handlePlayLecture(lecture);
@@ -213,14 +299,24 @@ const handlePlayLecture = (lecture) => {
   </div>
 
   {/* Right actions */}
-  <div className="flex items-center gap-3 text-gray-400">
-    <button title="Save (future)">
-      <Bookmark className="w-4 h-4" />
-    </button>
+  <div className="flex items-center gap-3">
+    {(() => {
+     const isBookmarked = lecture.bookmarks && lecture.bookmarks.length > 0;
 
-    <button title="Download (future)">
-      <Download className="w-4 h-4" />
-    </button>
+      return (
+        <button title="Bookmark" onClick={() => handleBookmarkToggle(lecture.id)}>
+          <Bookmark className={`w-5 h-5 ${isBookmarked ? "text-emerald-600 font-bold" : "text-gray-400"}`} />
+        </button>
+      );
+    })()}
+
+  <button 
+  title={lecture.type === 'video' ? "Save to Video Library" : "Download Audio File"} 
+  onClick={() => handleMediaDownloadClick(lecture)}
+  className="text-gray-400 hover:text-emerald-700 p-1 transition"
+>
+  <Download className="w-4 h-4" />
+</button>
 
     {/* Admin menu (visible for now) */}
     <button
@@ -275,6 +371,42 @@ const handlePlayLecture = (lecture) => {
           className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
         >
           Delete
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* 🟢 Educational Video Library Confirmation Modal */}
+{videoForLibrary && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
+      <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+        <Video className="text-emerald-700 w-5 h-5" /> Save to In-App Video Library?
+      </h2>
+      <p className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2 py-1 rounded inline-block mt-2">
+        Target Lecture: {videoForLibrary.title}
+      </p>
+      <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+        To save your device's storage space, this video will be securely added to your online <strong>Video Library</strong> rather than downloading directly onto your local browser file system memory.
+      </p>
+      <p className="text-xs text-gray-400 mt-2 italic">
+        💡 You can watch and stream this lecture smoothly inside your library dashboard anytime!
+      </p>
+      <div className="flex justify-end gap-3 mt-6">
+        <button
+          onClick={() => setVideoForLibrary(null)}
+          disabled={isLibraryMutating}
+          className="px-4 py-2 rounded-md bg-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-300 transition"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleConfirmLibrarySave}
+          disabled={isLibraryMutating}
+          className="px-4 py-2 rounded-md bg-emerald-700 text-white font-semibold text-sm hover:bg-emerald-800 transition shadow-sm disabled:opacity-50"
+        >
+          {isLibraryMutating ? "Saving..." : "Yes, Save Video"}
         </button>
       </div>
     </div>

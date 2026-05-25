@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import publicAxiosInstance from '../../auth/publicAxiosInstance';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { replace, useLocation, useNavigate } from 'react-router-dom';
 import { useUserContext } from '../context/UserContext';
+import MasjibaLogoMark from '../assets/masjiba-logo-mark.png';
 
 const RegisterVerification = () => {
   const [verificationCode, setVerificationCode] = useState('');
@@ -9,12 +10,14 @@ const RegisterVerification = () => {
   const [success, setSuccess] = useState('');
   const [verifyLoading, setVerifyLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
-  const {fetchUserProfile, setLoggedInUser} = useUserContext();
-const navigate = useNavigate();
-const location = useLocation();
+  const { fetchUserProfile, setLoggedInUser } = useUserContext();
+  const navigate = useNavigate();
+  const location = useLocation();
   const isDev = import.meta.env.VITE_ENV === 'development';
 
-const registeredEmail = location.state?.email || '';
+  // 🛠️ CHANGED HERE: Extract both the email and the directional flow tracking flag state
+  const registeredEmail = location.state?.email || '';
+  const flowType = location.state?.flowType || 'registration'; // defaults to registration fallback
 
   const handleChange = (e) => {
     setVerificationCode(e.target.value);
@@ -32,24 +35,46 @@ const registeredEmail = location.state?.email || '';
       return;
     }
 
-    const body = {
-      verificationCode: verificationCode.trim()
-    };
+    // 🛠️ CHANGED HERE: Formulate payload data parameters based on flow requirements
+    // For recovery, your route expects both code and email to tie them together securely
+    const body = flowType === 'recovery' 
+      ? { verificationCode: verificationCode.trim(), email: registeredEmail }
+      : { verificationCode: verificationCode.trim() };
     
+    // 🛠️ CHANGED HERE: Dynamic API router path switching mapping configuration
+    const endpoint = flowType === 'recovery' 
+      ? '/verifications/verify-recovery-code' 
+      : '/verifications/verify';
+
     try {
-      const res = await publicAxiosInstance.post('/verifications/verify', body);
+      const res = await publicAxiosInstance.post(endpoint, body);
+      
       if (res.status < 400) {
         console.log('Verification response:', res.data);
-        setSuccess(`Success: ${res.data.message || 'Email verified successfully!'}`);
+        setSuccess(`Success: ${res.data.message || 'Code verified successfully!'}`);
         setVerificationCode('');
         setVerifyLoading(false);
-        const accessToken = res.data.accessToken; 
-        localStorage.setItem('accessToken', accessToken); 
-        await fetchUserProfile();
-        setLoggedInUser(res.data.user)
-        navigate('/', {replace: true});
+
+        // 🛠️ CHANGED HERE: Fork execution pathways depending on user intent tracks
+        if (flowType === 'recovery') {
+          // Pass email and the secret resetToken securely to the final screen
+          navigate('/reset-password', { 
+            state: { 
+              email: registeredEmail, 
+              resetToken: res.data.resetToken 
+            }, replace: true
+          });
+        } else {
+          // Standard original Registration sequence logic track
+          const accessToken = res.data.accessToken; 
+          localStorage.setItem('accessToken', accessToken); 
+          await fetchUserProfile();
+          setLoggedInUser(res.data.user);
+          navigate('/', { replace: true },);
+        }
       }
     } catch (err) {
+      console.error('Verification error details:', err);
       if (err.code === 'ECONNABORTED') {
         setError('Request timeout - server is not responding. Please try again.');
       } else if (err.response?.status === 400) {
@@ -57,11 +82,11 @@ const registeredEmail = location.state?.email || '';
       } else if (err.response?.status === 404) {
         setError('Verification endpoint not found.');
       } else {
-        setError('Failed to verify email: ' + (err.response?.data?.message || err.message));
+        setError('Failed to verify code: ' + (err.response?.data?.message || err.message));
       }
       setVerifyLoading(false);
 
-      if(isDev){
+      if (isDev) {
         console.error('Verification error:', err.response?.data?.message);
       }
       return;
@@ -87,13 +112,25 @@ const registeredEmail = location.state?.email || '';
     }
   };
 
-  return (
-    <div className="min-h-screen  flex items-center justify-center p-6 mt-20">
-      <div className="w-full max-w-md bg-white/95 rounded-xl shadow-lg p-6 ">
-        <h1 className="text-2xl font-semibold text-emerald-800">Verify Your Email</h1>
-        <p className="text-sm text-gray-600 mt-1">Enter the verification code we sengt to your email address.</p>
+ return (
+    <div className="min-h-screen flex items-center justify-center p-6 mt-20">
+      <div className="w-full max-w-md bg-white/95 rounded-xl shadow-lg p-6">
+        
+        {/* BRANDING LOGO SECTION */}
+        <div className="flex flex-col items-center text-center mb-5">
+          <img 
+            src={MasjibaLogoMark} 
+            alt="Masjiba Logo" 
+            className="h-20 w-auto object-contain" 
+          />
+        </div>
 
-        {/* Mock email display - will be replaced with user email from state */}
+        {/* Dynamic heading adaptation styling */}
+        <h1 className="text-2xl font-semibold text-emerald-800 text-center">
+          {flowType === 'recovery' ? 'Confirm Recovery Code' : 'Verify Your Email'}
+        </h1>
+        <p className="text-sm text-gray-600 mt-1 text-center">Enter the verification code we sent to your email address.</p>
+
         <div className="mt-4 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
           <p className="text-xs text-gray-600">Verification code sent to:</p>
           <p className="text-sm font-semibold text-emerald-800">{registeredEmail}</p>
@@ -123,7 +160,7 @@ const registeredEmail = location.state?.email || '';
               disabled={verifyLoading}
               className="w-full bg-emerald-700 cursor-pointer text-white px-4 py-2 rounded-md font-semibold hover:bg-emerald-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
             >
-              {verifyLoading ? 'Verifying...' : 'Verify Email'}
+              {verifyLoading ? 'Verifying...' : 'Verify Code'}
             </button>
           </div>
         </form>
@@ -136,13 +173,9 @@ const registeredEmail = location.state?.email || '';
             disabled={resendLoading}
             className="w-full bg-gray-100 text-gray-800 px-4 py-2 rounded-md font-semibold hover:bg-gray-200 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
           >
-           {resendLoading ? 'Resending...' : 'Resend Code'} 
+            {resendLoading ? 'Resending...' : 'Resend Code'} 
           </button>
         </div>
-
-        <p className="text-xs text-gray-500 mt-6 text-center">
-          This is a verification page for email confirmation. Check your inbox for the code we sent.
-        </p>
       </div>
     </div>
   );

@@ -21,7 +21,7 @@ const AnnouncementModal = ({ announcement, isOpen, onClose }) => {
               className="w-full h-48 object-cover rounded-lg mb-4"
             />
           )}
-          <p className="text-gray-700 mb-4">{announcement.description}</p>
+          <p className="text-gray-700 mb-4">{announcement.content}</p>
           <p className="text-xs text-gray-500">Posted on {announcement.createdAt}</p>
         </div>
       </div>

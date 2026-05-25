@@ -3,8 +3,9 @@ import axios from "axios";
 import { Camera, Globe, MapPin } from "lucide-react";
 import privateAxiosInstance from "../../../auth/privateAxiosInstance";
 import { useUserContext } from "../../context/UserContext";
+ import { toggleMosqueFollow } from '../../util/follow.js';
 
-const MosqueProfile = ({ mosque }) => {
+const MosqueProfile = ({ mosque, followMosqueIds }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
@@ -12,21 +13,21 @@ const {loggedInUser} = useUserContext();
   // original image (fallback source)
   const [originalImage, setOriginalImage] = useState(mosque?.mosqueProfile?.image);
 
-    const handleFollowMosque = async (e, mosque) => {
-      e.stopPropagation(); // prevent opening mosque
-      try {
-        const res = await privateAxiosInstance.post(`/mosques/${mosque.id}/follow`);
-        if (res.status < 400) {
-          console.log('Followed successfully', res.data);
-          // Optionally, update the local state to reflect the follow
-        
-        }
-      } catch (err) {
-        if (isDev) {
-          console.log(err.response.data.message || err.message);
-        }
-      }
-    };
+  const isFollowing = followMosqueIds.includes(String(mosque?.id));
+
+
+// Inside HomePage component
+const handleFollowMosque = async (e, mosque) => {
+  e.stopPropagation();
+  
+  const { success, newStatus } = await toggleMosqueFollow(mosque.id);
+  
+  if (success) {
+    setMosques(prev => prev.map(m => 
+      m.id === mosque.id ? { ...m, isFollowing: newStatus } : m
+    ));
+  }
+};
 
   // SELECT IMAGE
   const handleSelectImage = (e) => {
@@ -173,16 +174,11 @@ const {loggedInUser} = useUserContext();
           </span>
  \
 
-   {loggedInUser && mosque.isFollowing === 1 ? (
-     <span className="text-sm text-emerald-600 font-medium">
-              Following
-            </span>
-           
-          ) : (
-           <span className="text-sm text-emerald-600 font-medium">
-              unfollowing
-            </span>
-          )}
+   {loggedInUser && (
+      <span className="text-sm text-emerald-600 font-medium">
+        {isFollowing ? "Following" : "Not Following"}
+      </span>
+    )}
         </div>
       </div>
     </div>

@@ -85,9 +85,12 @@ const CreateAnnouncementModal = ({ isOpen, onClose, mosqueFromState, onCreated }
 
       const res = await privateAxiosInstance.post(url, body);
 
-      if (res.status >= 400) {
-        throw new Error(res.data?.message || 'Unable to create announcement');
-      }
+     if(res.status < 400) {
+      console.log('Announcement created successfully:', res.data);
+     } else {
+      console.error('Unexpected response:', res.data || res);
+      throw new Error('Failed to create announcement');
+     }
 
       setTitle('');
       setContent('');

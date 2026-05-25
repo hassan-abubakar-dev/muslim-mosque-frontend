@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import privateAxiosInstance from "../../auth/privateAxiosInstance";
+import publicAxiosInstance from "../../auth/publicAxiosInstance";
 
 // Create the context
 const UserContext = createContext();
@@ -12,6 +13,17 @@ export const ContextProvider = ({ children}) => {
     const [appLoading, setAppLoading] = useState(false);
     const [authLoading, setAuthLoading] = useState(true);
     const [logOutError, setLogOutError] = useState(false);
+    const [followedMosques, setFollowedMosques] = useState([]);
+    const [notifications, setNotifications] = useState([]);
+      const [showProfileMenu, setShowProfileMenu] = useState(false);
+      const [toastToCreateAccountMessage, setToastToCreateAccountMessage] = useState(null);
+      const [mosquePages, setMosquePages] = useState(1);
+      const [followMosqueIds, setFollowMosqueIds] = useState([]);
+
+      // for mosque list in homepage and search
+    const [mosques, setMosques] = useState([]);
+const [hasMore, setHasMore] = useState(true);
+const [isFetching, setIsFetching] = useState(false);
 
     const fetchUserData = async () => {
       setAppLoading(true);
@@ -20,7 +32,7 @@ export const ContextProvider = ({ children}) => {
         if (res.status < 400) {
           setLoggedInUser(res?.data.user);
           if (isDev) {
-            console.log('Fetched user data:', res.data.user);
+            // console.log('Fetched user data:', res.data.user);
           }
           return true;
         }
@@ -51,6 +63,71 @@ export const ContextProvider = ({ children}) => {
       }
     };
 
+    const fetchUserFollowedMosques = async () => {
+      try {
+        const res = await privateAxiosInstance.get('/mosques/get-followed-mosques');
+        if (res.status < 400) {
+          // Handle followed mosques data
+          // console.log('Fetched followed mosques:', res.data.mosques);
+          setFollowedMosques(res.data.mosques);
+        }
+      } catch (err) {
+        if (isDev) {
+          console.error('Failed to fetch followed mosques:', err.response?.data?.message || err.message);
+        }
+      }
+    };
+
+     const fetchNotifications = async() => {
+    try {
+      const res = await privateAxiosInstance.get('/notifications/get');
+      setNotifications(res.data.notifications);
+      // console.log('Fetched notifications:', res.data.notifications);
+      return res.data.notifications;
+    } catch (err) {
+      console.error('Error fetching notifications:', err.response?.data || err.message);
+      return [];
+    }
+ };
+
+
+
+const fetchMosques = async (page = 1, limit = 10, searchQuery = '', state = '', reset = false) => {
+  setIsFetching(true);
+  try {
+    const res = await publicAxiosInstance.get('/mosques/get-mosques', {
+      params: { page, limit, search: searchQuery, state }
+    });
+
+    if (res.status < 400) {
+      const newMosques = res.data.mosques;
+      
+      // Update data: replace if reset=true, else append
+      setMosques(prev => reset ? newMosques : [...prev, ...newMosques]);
+      
+      // If we received fewer items than the limit, we've reached the end
+      setHasMore(newMosques.length === limit);
+    }
+  } catch (err) {
+    if (isDev) console.log(err);
+  } finally {
+    setIsFetching(false);
+  }
+};
+
+const fetchFollowedMosqueIds = async () => {
+    try {
+        const res = await privateAxiosInstance.get('/mosques/get-followed-mosque-ids');
+        if (res.data.status === 'success') {
+          // console.log(res.data.followedMosqueIds)
+            setFollowMosqueIds(res.data.followedMosqueIds);
+        }
+    } catch (err) {
+        console.error("Failed to fetch followed IDs:", err);
+    }
+};
+
+
     useEffect(() => {
       const accessToken = localStorage.getItem('accessToken');
 
@@ -58,6 +135,9 @@ export const ContextProvider = ({ children}) => {
         const isLoggedIn = await fetchUserData();
         if (isLoggedIn) {
           await fetchUserProfile();
+          await fetchUserFollowedMosques();
+          await fetchFollowedMosqueIds();
+            await fetchNotifications();
           // other data that need login can be fetched here
         }
         setAuthLoading(false);
@@ -81,7 +161,9 @@ export const ContextProvider = ({ children}) => {
   return (
     <UserContext.Provider value={{ 
         loggedInUser, setLoggedInUser, fetchUserData, profileLoading, setProfileLoading, userProfile, fetchUserProfile,  appLoading,
-        authLoading, setAuthLoading, logOutError, setLogOutError, setUserProfile
+        authLoading, setAuthLoading, logOutError, setLogOutError, setUserProfile, followedMosques, setFollowedMosques, notifications, setNotifications, fetchNotifications, showProfileMenu,
+         setShowProfileMenu, toastToCreateAccountMessage, setToastToCreateAccountMessage, mosques, setMosques, fetchMosques, hasMore, isFetching,
+          followMosqueIds, setFollowMosqueIds, fetchFollowedMosqueIds
  }}>
       {children}
     </UserContext.Provider>
@@ -91,6 +173,7 @@ export const ContextProvider = ({ children}) => {
 // Custom hook to use the context
 export const useUserContext = () => {
   return useContext(UserContext);
+
 };
 
 export { UserContext };

@@ -2,23 +2,54 @@ import { useState } from "react";
 import privateAxiosInstance from "../../../auth/privateAxiosInstance";
 
 
-const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCategory, setError, mosqueFromState }) => {
+const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCategory, setError, mosqueFromState, fetchAllCategories }) => {
 
     const isDev = import.meta.env.VITE_ENV === 'development'
 
     const [loading, setLoading] = useState(false);
     const [createCategoryError, setCreateCategoryError] = useState('');
 
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setNewCategory((prev) => ({ ...prev, [name]: value }));
-    };
+    const validate = () => {
+    // 1. Determine the name to check
+    const nameToCheck = newCategory?.name === "Other" ? newCategory?.customName : newCategory?.name;
+
+    // 2. Check for required fields
+    if (!nameToCheck || nameToCheck.trim() === "") {
+        setCreateCategoryError("Category name is required.");
+        return false;
+    }
+    if (!newCategory?.teacherName || newCategory?.teacherName.trim() === "") {
+        setCreateCategoryError("Teacher name is required.");
+        return false;
+    }
+    
+    // Clear error if validation passes
+    setCreateCategoryError("");
+    return true;
+};
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setNewCategory((prev) => {
+        const updated = { ...prev, [name]: value };
+        // If they change the dropdown to something other than "Other", clear customName
+        if (name === "name" && value !== "Other") {
+            delete updated.customName;
+        }
+        return updated;
+    });
+};
 
     const [uploadedFile, setUploadedFile] = useState(null);
 
-    const handleCreateCategory = async () => {
-  setLoading(true);
+   
 
+    const handleCreateCategory = async () => {
+      if (!validate()) return;
+  setLoading(true);
+  
+
+   const finalName = newCategory?.name === "Other" ? newCategory?.customName : newCategory?.name;
   try {
     let fileKey = null;
 
@@ -48,9 +79,9 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
 
     // 🔹 STEP 3: Send data to backend
     const body = {
-      name: newCategory.name,
-      teacherName: newCategory.teacherName,
-      information: newCategory.information,
+      name: finalName,
+      teacherName: newCategory?.teacherName,
+      information: newCategory?.information,
       fileKey, // will be null if no image
     };
 
@@ -64,6 +95,7 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
       setShowModal(false);
       setCreateCategoryError("");
       setNewCategory(initialCategory);
+      await fetchAllCategories(mosqueFromState.id);
     }
 
   } catch (err) {
@@ -88,8 +120,10 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
 };
 
    const handleUpdateCategory = async () => {
+    if (!validate()) return;
   setLoading(true);
 
+    const finalName = newCategory?.name === "Other" ? newCategory?.customName : newCategory?.name;
   try {
     let fileKey = null;
 
@@ -121,9 +155,9 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
     const res = await privateAxiosInstance.put(
       `/categories/update-category/${newCategory.id}`,
       {
-        name: newCategory.name,
-        teacherName: newCategory.teacherName,
-        information: newCategory.information,
+        name: finalName,
+        teacherName: newCategory?.teacherName,
+        information: newCategory?.information,
         fileKey // null if no new image
       }
     );
@@ -132,7 +166,7 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
       setNewCategory(initialCategory);
       setShowModal(false);
       setLoading(false);
-
+await fetchAllCategories(mosqueFromState.id)
       if (isDev) console.log(res.data);
     }
 
@@ -172,7 +206,7 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
                     <select
                         name="name"
                         required
-                        value={newCategory.name}
+                        value={newCategory?.name}
                         onChange={handleChange}
                         className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300"
                     >
@@ -185,13 +219,13 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
                 </label>
 
                 {/* Show input if "Other" selected */}
-                {newCategory.name === "Other" && (
+                {newCategory?.name === "Other" && (
                     <label className="block mb-2">
                         <span className="text-gray-700 text-sm">Custom Category Name *</span>
                         <input
                             type="text"
                             name="customName"
-                            value={newCategory.customName || ""}
+                            value={newCategory?.customName || ""}
                             onChange={handleChange}
                             className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300"
                             placeholder="Enter category name"
@@ -204,7 +238,7 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
                     <span className="text-gray-700 text-sm">Category Info</span>
                     <textarea
                         name="information"
-                        value={newCategory.information ? newCategory.information : ''}
+                        value={newCategory?.information ? newCategory?.information : ''}
                         onChange={handleChange}
                         rows={3}
                         className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300"
@@ -219,7 +253,7 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
                         type="text"
                         name="teacherName"
                         required
-                        value={newCategory.teacherName || ""}
+                        value={newCategory?.teacherName || ""}
                         onChange={handleChange}
                         className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300"
                         placeholder="Enter teacher name"

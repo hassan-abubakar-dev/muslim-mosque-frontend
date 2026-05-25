@@ -1,4 +1,43 @@
 body{
   overflow-x: hidden;
-  background-color: #F9FAFB
+  background-color: #F9FAFB;
+  
 };
+
+/* Layout with Sidebar */
+.flex {
+  display: flex;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+/* Responsive adjustments */
+@media (min-width: 768px) {
+  /* Sidebar takes fixed width on desktop */
+  aside {
+    width: 16rem; /* 256px - w-64 */
+    padding-top: 0;
+    position: relative;
+    height: auto;
+    transform: none !important;
+  }
+  
+  /* Adjust main content area */
+  .flex-1 {
+    width: calc(100% - 16rem);
+  }
+}
+
+@media (max-width: 767px) {
+  /* Mobile: Sidebar overlay positioning */
+  aside {
+    padding-top: 6rem; /* Account for fixed header */
+  }
+  
+  /* Full width on mobile */
+  .flex-1 {
+    width: 100%;
+  }
+}

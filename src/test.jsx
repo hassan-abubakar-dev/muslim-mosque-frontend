@@ -7,7 +7,6 @@ import { useUserContext } from '../context/UserContext.jsx';
 import Toast from './Toast.jsx';
 import NotificationsDropdown from './NotificationsDropdown.jsx';
 import privateAxiosInstance from '../../auth/privateAxiosInstance.js';
-import MobileMenu from './MobileMenu.jsx';
 
 const Header = ({ onToggleSidebar }) => {
     const [showSearch, setShowSearch] = useState(false);
@@ -44,23 +43,16 @@ const Header = ({ onToggleSidebar }) => {
         fetchUnreadNotificationsCount();
     }, []);
 
-  useEffect(() => {
-    // Only trigger the fetch if there is actually a search query or a state selected
-    if (query.trim().length > 1 || selectedState !== "") {
+    useEffect(() => {
         const delayDebounce = setTimeout(() => {
-            fetchMosques(1, 15, query, selectedState, true);
+            fetchMosques(1, 10, query, selectedState, true);
         }, 600);
         return () => clearTimeout(delayDebounce);
-    }
-}, [query, selectedState]);
+    }, [query, selectedState]);
 
     return (
         <header className="bg-linear-to-r from-emerald-800 via-emerald-700 to-green-600 text-white shadow-md fixed top-0 left-0 right-0 h-24 flex items-center z-50">
             {logOutError && <Toast />}
-            <MobileMenu 
-                isOpen={mobileMenuOpen} 
-                onClose={() => setMobileMenuOpen(false)} 
-            />
             <div className='flex items-center justify-between px-4 w-full -mt-2'>
                 
                 {/* LEFT: Menu (Mobile), Logo, and Search Trigger */}
@@ -112,13 +104,9 @@ const Header = ({ onToggleSidebar }) => {
                     </div>
 
                     <div className='flex items-center'>
-                         {!loggedInUser && profileLoading === false && !authLoading && (
-                            <div className='flex items-center gap-2 '>
-                                <button onClick={() => { window.history.pushState({}, '', '/signup'); window.dispatchEvent(new PopStateEvent('popstate')); }} className='text-white/90 text-sm px-3 py-1 rounded-md border border-white/20 hover:bg-white/10 cursor-pointer text-nowrap'>Sign Up</button>
-                                <button onClick={() => { window.history.pushState({}, '', '/login'); window.dispatchEvent(new PopStateEvent('popstate')); }} className='bg-white text-emerald-700 px-3 py-1 rounded-md font-semibold cursor-pointer text-nowrap'>Log In</button>
-                            </div>
+                        {!loggedInUser && profileLoading === false && !authLoading && (
+                            <button onClick={() => navigate('/login')} className='bg-white text-emerald-700 px-4 py-2 rounded-md font-semibold'>Log In</button>
                         )}
-
                         {loggedInUser && profileLoading === false && !authLoading && (
                             <div className='relative'>
                                 <img src={userProfile} alt="Profile" onClick={() => setShowProfileMenu(prev => !prev)} className='w-11 h-11 rounded-full border-2 border-white/50 object-cover cursor-pointer' />

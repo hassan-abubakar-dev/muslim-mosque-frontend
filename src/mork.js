@@ -1,58 +1,10 @@
-// src/mockData/mosques.js
-export const mosques = [
-  {
-    id: "1",
-    name: "Masjid Umar Bin Khattab",
-    country: "Nigeria",
-    state: "Kano",
-    is_verified: true,
-    description: "Weekly Tafseer and Fiqh lessons",
-    categories: [
-      {
-        id: "c1",
-        name: "Tafseer",
-        lectures: [
-          {
-            id: "l1",
-            title: "Tafseer of Surah Al-Baqarah",
-            teacher_name: "Sheikh Ali",
-            lecture_date: "2025-12-20",
-            media_type: "VIDEO",
-            media_url: "https://www.example.com/video1.mp4"
-          },
-          {
-            id: "l2",
-            title: "Tafseer of Surah Yaseen",
-            teacher_name: "Sheikh Ali",
-            lecture_date: "2025-12-22",
-            media_type: "AUDIO",
-            media_url: "https://www.example.com/audio1.mp3"
-          }
-        ]
-      },
-      {
-        id: "c2",
-        name: "Hadith",
-        lectures: [
-          {
-            id: "l3",
-            title: "Hadith on Patience",
-            teacher_name: "Sheikh Umar",
-            lecture_date: "2025-12-23",
-            media_type: "VIDEO",
-            media_url: "https://www.example.com/video2.mp4"
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: "2",
-    name: "Masjid Al-Farooq",
-    country: "Nigeria",
-    state: "Lagos",
-    is_verified: false,
-    description: "Daily Quran and Hadith lessons",
-    categories: []
-  }
-];
+- Use a flex container with top alignment (items-start) and a clean gap.
+- LEFT SIDE: A circular profile image (w-12 h-12, rounded-full, object-cover) that represents the mosque. Ensure it has flex-shrink-0 so it never squishes.
+- RIGHT SIDE (Content Block): A flex-1 container holding three vertical rows:
+  1. Top row: The Mosque Name as a title. It must be bold text (font-bold, text-gray-900) and truncated if too long.
+  2. Middle row: The notification message body text below the title. Use a readable gray color (text-gray-600) and ensure words break safely if long.
+  3. Bottom row: The creation timestamp date sitting below the message in small, muted text (text-xs, text-gray-400).
+
+Additional Specs:
+- The entire container should have a clean border-b, soft padding, and a smooth background transition effect on hover (hover:bg-gray-50 transition-colors).
+- Accept a single 'notification' object as a prop containing: mosqueName, mosqueImage, message, and createdAt. Include a small utility helper inside the component to parse the ISO date into a localized string format.

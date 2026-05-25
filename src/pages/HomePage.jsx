@@ -1,169 +1,118 @@
+          
 
-import Header from '../components/Header';
-import MosqueListSkeleton from '../components/loadingSkeletons/MosqueListSkeleton';
-import ProfileImage from '../assets/profile.jpg'
- import { MapPin } from 'lucide-react';
-import { useEffect, useState, useContext } from 'react';
-import publicAxiosInstance from '../../auth/publicAxiosInstance';
+import { useEffect, useRef, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Toast from '../components/Toast';
-import privateAxiosInstance from '../../auth/privateAxiosInstance';
 import { UserContext } from '../context/UserContext';
+import { toggleMosqueFollow } from '../util/follow.js';
+import MosqueCard from '../components/MosqueCard';
+import MosqueListSkeleton from '../components/loadingSkeletons/MosqueListSkeleton';
 
 const HomePage = () => {
-
-  const [mosques, setMosques] = useState([]);
-  const [mosqueLoading, setMosqueLoading] = useState(false); 
   const navigate = useNavigate();
-  const isDev = import.meta.env.VITE_ENV === 'development';
-  const [Error, setError] = useState(false);
-  const { loggedInUser } = useContext(UserContext);
-  const fetchMosques = async() => {
-    setMosqueLoading(true)
-    try{
-      const res = await publicAxiosInstance.get('/mosques/get-mosques');
-      if(res.status < 400){
-         setMosques(res.data.mosques);
-         setError(false);
-         console.log('Fetched mosques:', res.data.mosques);
-      }
-    }
-    catch(err){
-     if(isDev){
-       console.log(err?.response?.data || err.message);
-     }
-      
-    }finally{
-      setMosqueLoading(false);
-    }
-  };
+  const observerTarget = useRef(null);
+  const [page, setPage] = useState(1);
+  
+  const { loggedInUser, fetchMosques, mosques, hasMore, isFetching, followMosqueIds, setFollowMosqueIds, fetchFollowedMosqueIds  } = useContext(UserContext);
 
   const openMosque = (mosque) => {
-    navigate(`/mosque/${mosque.id}`, {state: {mosque}});
+    navigate(`/mosque/${mosque.id}`, { state: { mosque } });
   };
 
-  const handleFollowMosque = async (e, mosque) => {
-    e.stopPropagation(); // prevent opening mosque
-    try {
-      const res = await privateAxiosInstance.post(`/mosques/${mosque.id}/follow`);
-      if (res.status < 400) {
-        console.log('Followed successfully', res.data);
-        // Optionally, update the local state to reflect the follow
-      
-      }
-    } catch (err) {
-      if (isDev) {
-        console.log(err.response.data.message || err.message);
-      }
+const handleFollowMosque = async (e, mosque) => {
+  e.stopPropagation();
+
+  // 1. Ensure we are working with consistent types (Strings)
+  const targetId = String(mosque.id);
+  
+  // Call the API
+  const { success, mosqueId, follow } = await toggleMosqueFollow(mosque.id);
+
+  if (success) {
+    const formattedId = String(mosqueId); // Ensure ID from API is also a string
+    
+    if (follow) {
+      // Add to array if not already present
+      setFollowMosqueIds(prev => {
+        if (prev.includes(formattedId)) return prev;
+        return [...prev, formattedId];
+      });
+    } else {
+      // Remove from array
+      setFollowMosqueIds(prev => prev.filter(id => id !== formattedId));
     }
-  };
+  } else {
+    // Show error toast if API fails
+    console.error("Failed to update follow status");
+  }
+};
 
+  // Initial Fetch
   useEffect(() => {
-    fetchMosques();
+    fetchMosques(1, 10, '', '', true); 
   }, []);
 
- 
-  
+  // Load more
+  useEffect(() => {
+    if (page > 1) {
+      fetchMosques(page, 10, '', '', false);
+    }
+  }, [page]);
 
-if(mosqueLoading){
-  return <MosqueListSkeleton />
-}else{
-  
-    return (
-        <div className="min-h-screen pb-20">
-          <main className="max-w-6xl mx-auto p-6 pt-8 mt-20">
-          <h2 className="text-2xl font-semibold mb-4">Featured Mosques</h2>
-        {Error && <Toast />}
+  // Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && hasMore && !isFetching) {
+        setPage((prev) => prev + 1);
+      }
+    }, { threshold: 1.0 });
 
-<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-  {mosques.length > 0 && mosques.map((mosque) => (
-    <div
-      key={mosque.id}
-      role="button"
-      tabIndex={0}
-      aria-label={`Open ${mosque.name} details`}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { openMosque(mosque); } }}
-      className="cursor-pointer bg-white rounded-xl shadow-md hover:shadow-lg overflow-hidden
-                 w-full max-w-sm flex flex-col min-h-[360px] focus:outline-none focus:ring-2 focus:ring-emerald-300"
-      onClick={() => openMosque(mosque)}
-    >
-      {/* Image */}
-      <div className="h-40 w-full overflow-hidden">
-        <img
-          src={mosque?.mosqueProfile?.image}
-          alt={mosque.name || 'Mosque'}
-          className="w-full h-full object-cover"
-        />
-      </div>
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => observer.disconnect();
+  }, [hasMore, isFetching]);
 
-      {/* Content */}
-      <div className="p-4 flex flex-col flex-1">
-        {/* Top info */}
-        <div>
-          {/* Name + Status */}
-          <div className="flex items-center gap-2">
-            <h3
-              className="font-semibold text-gray-800 text-lg truncate flex-1"
-              title={mosque.name}
-            >
-              {mosque.name}
-            </h3>
+  return (
+    <div className="min-h-screen pb-20">
+      <main className="max-w-6xl mx-auto p-6 pt-8 mt-20">
+        <h2 className="text-2xl font-semibold mb-4">
+          {mosques.length > 0 ? "Featured Mosques" : ""}
+        </h2>
 
-            <span className="shrink-0 text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
-              {mosque.status}
-            </span>
+        {/* CONDITION: Show Skeleton ONLY if we have no mosques yet and we are still fetching the first page */}
+        {mosques.length === 0 && isFetching ? (
+          <MosqueListSkeleton />
+        ) : mosques.length === 0 && !isFetching ? (
+          <div className="flex justify-center items-center py-20">
+            <p className="text-gray-500 text-lg">No mosques found for your search criteria.</p>
           </div>
-
-          {/* Location */}
-          <div className="flex items-center gap-1 text-sm text-gray-600 mt-1 truncate">
-            <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span className="truncate">
-              {mosque.localGovernment}, {mosque.state}, {mosque.country}
-            </span>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {mosques.map((mosque) => (
+              <MosqueCard
+                key={mosque.id}
+                mosque={mosque}
+                openMosque={openMosque}
+                handleFollowMosque={handleFollowMosque}
+                loggedInUser={loggedInUser}
+                followMosqueIds={followMosqueIds} 
+                setFollowMosqueIds={setFollowMosqueIds}
+              />
+            ))}
           </div>
+        )}
 
-          {/* Description (always reserve space) */}
-          <p className="text-xs text-gray-500 mt-2 line-clamp-3 min-h-[3.5rem]">
-            {mosque.description || ' '}
-          </p>
-        </div>
-
-        {/* Bottom actions (fixed position) */}
-        <div className="mt-auto pt-4 flex items-center justify-between">
-          {/* Followers */}
-          <span className="text-sm text-gray-600">
-            {mosque.followersCount} {mosque.followersCount > 1 ? 'followers' : 'follower'}
-          </span>
-
-          {/* Follow button or Following text */}
-          {loggedInUser && loggedInUser.managedMosques?.some(m => String(m.id) === String(mosque.id)) ? (
-            <span className="text-sm text-emerald-600 font-medium">
-              Admin
-            </span>
-          ) : loggedInUser && mosque.isFollowing === 1 ? (
-            <span className="text-sm text-emerald-600 font-medium">
-              Following
-            </span>
-          ) : (
-            <button
-              onClick={(e) => handleFollowMosque(e, mosque)}
-              className="px-6 py-1.5 rounded-md text-sm font-medium bg-emerald-700 text-white hover:bg-emerald-800 transition cursor-pointer"
-            >
-              Follow
-            </button>
+        {/* Sentinel div for Infinite Scroll */}
+        <div ref={observerTarget} className="h-20 mt-4 flex justify-center items-center">
+          {/* Only show the small spinner if we already have some mosques (don't show if skeleton is showing) */}
+          {mosques.length > 0 && isFetching && (
+            <div className="flex items-center gap-2 text-emerald-700">
+              <div className="w-5 h-5 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-sm font-medium">Loading...</span>
+            </div>
           )}
         </div>
-      </div>
+      </main>
     </div>
-  ))}
+  );
+};
 
-</div>
-
-
-          {/* <MosqueListSkeleton /> */}
-        </main>
-      </div>
-    );
-}
-}
 export default HomePage;

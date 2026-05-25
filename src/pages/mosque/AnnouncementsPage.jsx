@@ -1,19 +1,41 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Calendar } from 'lucide-react';
 import MosqueProfile from './MosqueProfile';
 import AnnouncementModal from './AnnouncementModal';
 import truncateByWords from '../../util/splitWord';
+import SplashScreen from '../../components/loadingSkeletons/SplashScreen';
+import privateAxiosInstance from '../../../auth/privateAxiosInstance';
 
 const AnnouncementsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-
+  const [appLoading, setApploading] = useState(true);
+  const [announcements, setAnnouncements] = useState([]);
+const [announcementsCount, setAnnouncementsCount] = useState(0);
   // Mock data - replace with API call later
-  const [mosque, setMosque] = useState(location?.state?.mosqueFromState || [])
-  console.log(location?.state?.mosqueFromState);
-  
+  const [mosque, setMosque] = useState(location?.state?.mosqueFromState || []);
+
+  const fetchMosqueAnnouncements = async() => {
+    try{
+      const res = await privateAxiosInstance.get(`/announcements/get-announcements/${mosque.id}`);
+      if(res.status < 400){
+        console.log(res.data)
+        setAnnouncements(res.data.announcements);
+        setAnnouncementsCount(res.data.totalInDb);
+      }
+
+    }
+    catch(err){
+      console.log(err.response.data || err)
+    }
+  }
+
+  useEffect(() => {
+     fetchMosqueAnnouncements();
+    setApploading(false);
+  }, [mosque]);
   
   const mockAnnouncements = [
     {
@@ -42,32 +64,37 @@ const AnnouncementsPage = () => {
     setSelectedAnnouncement(null);
   };
 
+  if(appLoading){
+    return <SplashScreen />
+  }else{
+
+  
   return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-20">
+    <div className="min-h-screen bg-gray-100 p-6 mt-20 mb-20">
       <div className="max-w-6xl mx-auto">
         {/* Mosque Card at Top */}
         <MosqueProfile mosque={mosque} />
 
         {/* Announcements List */}
         <div className="mt-6">
-          <h2 className="text-2xl font-semibold text-emerald-800 mb-4">Announcements</h2>
+          <h2 className="text-2xl font-semibold text-emerald-800 mb-4">Announcements ({announcementsCount})</h2>
           
           <div className="space-y-4">
-            {mockAnnouncements.map((announcement) => (
+            { announcements.map((announcement) => (
               <div
                 key={announcement.id}
                 className="bg-white p-4 rounded-xl shadow-md hover:shadow-lg transition cursor-pointer"
                 onClick={() => openAnnouncement(announcement)}
               >
-                <h3 className="text-lg font-semibold text-emerald-700">{announcement.title}</h3>
+                <h3 className="text-lg font-semibold text-emerald-700">{announcement.title} hhhhh</h3>
                 <p className="text-sm text-gray-600 mt-1">
                   {/* Mobile: 12 words limit */}
                   <span className="md:hidden">
-                    {truncateByWords(announcement.description, 6)}
+                    {truncateByWords(announcement.content, 6)}
                   </span>
                   {/* MD and above: 20 words limit */}
                   <span className="hidden md:inline">
-                    {truncateByWords(announcement.description, 16)}
+                    {truncateByWords(announcement.content, 16)}
                   </span>
                 </p>
                 <div className="flex items-center gap-2 mt-3">
@@ -88,6 +115,6 @@ const AnnouncementsPage = () => {
       </div>
     </div>
   );
-};
+}};
 
 export default AnnouncementsPage;
