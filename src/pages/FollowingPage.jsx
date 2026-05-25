@@ -5,7 +5,7 @@ import { UserContext } from '../context/UserContext';
 
 const FollowingPage = () => {
   const navigate = useNavigate();
-  const { followedMosques, loggedInUser } = useContext(UserContext);
+  const { followedMosques, loggedInUser, followMosqueIds } = useContext(UserContext);
 
   const openMosque = (mosque) => {
     if (!mosque) return;
@@ -30,6 +30,7 @@ const FollowingPage = () => {
                 mosque={mosque}
                 openMosque={openMosque}
                 loggedInUser={loggedInUser}
+                followMosqueIds={followMosqueIds}
               />
             ))}
           </div>

@@ -1,5 +1,5 @@
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Search, Video, Headphones, MoreVertical, Bookmark, Share2, Download, Trash2 } from "lucide-react";
 import CategoryLactureHeader from "./CateoryLactureHeader";
@@ -8,6 +8,7 @@ import AudioPlayerModal from './AudioPlayerModal';
 import privateAxiosInstance from "../../../auth/privateAxiosInstance";
 import handleBookmarkClick from "../../util/bookmark.js";
 import handleVideoLibraryToggle from "../../util/videoLibrary.js";
+import LectureCard from "./LectureCart.jsx";
 
 
 
@@ -21,6 +22,7 @@ const CategoryLecture= () => {
   const cat = location.state?.cat || null;
 
 
+
   const [openMenuId, setOpenMenuId] = useState(null);
 const [lectureToDelete, setLectureToDelete] = useState(null);
 const [showUploadTypeModal, setShowUploadTypeModal] = useState(false);
@@ -30,6 +32,27 @@ const [isLibraryMutating, setIsLibraryMutating] = useState(false);
  
   const [audioModalLecture, setAudioModalLecture] = useState(null);
   const navigate = useNavigate();
+
+
+  
+// Pagination & Observer State
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const observer = useRef();
+
+
+  // Observer Logic: Watch the last element
+  const lastLectureElementRef = useCallback((node) => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prev => prev + 1);
+      }
+    });
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore]);
 
   const handleBookmarkToggle = async (lectureId) => {
     try {
@@ -114,16 +137,32 @@ const formatDuration = (seconds) => {
   return `${m}:${s < 10 ? "0" : ""}${s}`;
 };
 
-const fetchLectures = async() => {
-  try{
-    const res = await privateAxiosInstance.get(`/lectures/get-lectures/${cat?.id}?page=1&limit=10`);
-    setLectures(res.data.lectures);
-    console.log('Fetched lectures:', res.data.lectures);
+const fetchLectures = async (pageNum, isReset = false) => {
+  if (!cat?.id) return;
+  setLoading(true);
+  
+  try {
+    // Build the query string dynamically
+    let url = `/lectures/get-lectures/${cat.id}?page=${pageNum}&limit=10`;
+    
+    // Only add search if there is actual text
+    if (search && search.trim() !== "") {
+      url += `&search=${encodeURIComponent(search.trim())}`;
+    }
+
+    const res = await privateAxiosInstance.get(url);
+    
+    const newLectures = res.data.lectures;
+    setLectures(prev => isReset ? newLectures : [...prev, ...newLectures]);
+    
+    // Set hasMore based on whether we received a full page
+    setHasMore(newLectures.length >= 10);
+  } catch (err) {
+    console.error(err);
+  } finally {
+    setLoading(false);
   }
-  catch(err){
-    console.error(err.response?.data || err.message);
-  }
-}
+};
 
 
 const handleDeleteLecture = async (lectureId) => {
@@ -154,30 +193,20 @@ const handlePlayLecture = (lecture) => {
 };
 
 
-  // Filter logic (frontend)
-  const filteredLectures = useMemo(() => {
-    let data = lectures;
+const filteredLectures = useMemo(() => {
+    // Since search is now handled by backend, we only filter by tab here
+    return activeTab === "all" ? lectures : lectures.filter(l => l.type === activeTab);
+  }, [activeTab, lectures]);
 
-    if (search.trim()) {
-      data = data.filter((l) =>
-        l.title.toLowerCase().includes(search.toLowerCase())
-      );
-    }
+useEffect(() => {
+    setPage(1);
+    fetchLectures(1, true);
+  }, [search, activeTab, cat?.id]);
 
-    if (activeTab !== "all") {
-      data = data.filter((l) => l.type === activeTab);
-    }
-
-    return data;
-  }, [activeTab, search, lectures]);
-
-
+  // Fetch when page increments
   useEffect(() => {
-    if (cat) {
-      fetchLectures();
-    }
-
-  }, [cat]);
+    if (page > 1) fetchLectures(page, false);
+  }, [page]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 mt-24">
@@ -249,91 +278,53 @@ const handlePlayLecture = (lecture) => {
       </div>
 
       {/* Lectures List */}
-      <div className="space-y-4 max-w-4xl mx-auto">
-        {filteredLectures.length === 0 && (
-          <div className="text-center text-gray-500 py-10">
-            No lectures found.
-          </div>
-        )}
+   
+{/* Lectures List */}
+<div className="space-y-4 max-w-4xl mx-auto">
+  {filteredLectures.length === 0 && !loading && (
+    <div className="text-center text-gray-500 py-10">No lectures found.</div>
+  )}
 
-        {lectures.length > 0 && filteredLectures.map((lecture) => (
-          
-        <div
-  key={lecture.id}
-  className="relative bg-white rounded-xl shadow p-4 flex justify-between items-center hover:shadow-md transition"
->
-  {/* Left */}
-  <div className="flex items-start gap-4">
-    <button
-      type="button"
-      aria-label={lecture.type === 'audio' ? `Play audio: ${lecture.title}` : `Play video: ${lecture.title}`}
-   onClick={() => handlePlayLecture(lecture)}
-  onKeyDown={(e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      handlePlayLecture(lecture);
-    }
-  }}
-      className="w-18 h-14 flex items-center justify-center bg-emerald-100 rounded-md overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-300"
-    >
-      {lecture.type === 'video' && lecture.thumbnail ? (
-        <img
-          src={lecture.thumbnail}
-          alt={lecture.title}
-          className="w-full h-full object-cover"
-        />
-      ) : lecture.type === 'video' ? (
-        <Video className="text-emerald-700 w-6 h-6" />
-      ) : (
-        <Headphones className="text-emerald-700 w-6 h-6"  />
-      )}
-    </button>
-
-    <div>
-      <h3 className="font-semibold text-gray-800">
-        {lecture.title}
-      </h3>
-      <p className="text-xs text-gray-500 mt-1">
-        {cat?.teacherName} • {formatDuration(lecture.duration)}
-      </p>
-    </div>
-  </div>
-
-  {/* Right actions */}
-  <div className="flex items-center gap-3">
-    {(() => {
-     const isBookmarked = lecture.bookmarks && lecture.bookmarks.length > 0;
-
+  {filteredLectures.map((lecture, index) => {
+    // Check if this is the last element in the list
+    if (filteredLectures.length === index + 1) {
       return (
-        <button title="Bookmark" onClick={() => handleBookmarkToggle(lecture.id)}>
-          <Bookmark className={`w-5 h-5 ${isBookmarked ? "text-emerald-600 font-bold" : "text-gray-400"}`} />
-        </button>
+        <div ref={lastLectureElementRef} key={lecture.id}>
+          <LectureCard 
+            lecture={lecture}
+            teacherName={cat?.teacherName}
+            formatDuration={formatDuration}
+            onPlay={handlePlayLecture}
+            onBookmark={handleBookmarkToggle}
+            onDownload={handleMediaDownloadClick}
+            onDelete={setLectureToDelete}
+          />
+        </div>
       );
-    })()}
+    } else {
+      // Standard render for all other elements
+      return (
+        <LectureCard 
+          key={lecture.id}
+          lecture={lecture}
+          teacherName={cat?.teacherName}
+          formatDuration={formatDuration}
+          onPlay={handlePlayLecture}
+          onBookmark={handleBookmarkToggle}
+          onDownload={handleMediaDownloadClick}
+          onDelete={setLectureToDelete}
+        />
+      );
+    }
+  })}
 
-  <button 
-  title={lecture.type === 'video' ? "Save to Video Library" : "Download Audio File"} 
-  onClick={() => handleMediaDownloadClick(lecture)}
-  className="text-gray-400 hover:text-emerald-700 p-1 transition"
->
-  <Download className="w-4 h-4" />
-</button>
-
-    {/* Admin menu (visible for now) */}
-    <button
-      onClick={() => {
-          setOpenMenuId(null);
-          setLectureToDelete(lecture);
-        }}
-      className="relative"
-    >
-      <Trash2 className="w-5 h-5" />
-    </button>
-  </div>
-
+  {/* Loading indicator at the bottom */}
+  {loading && (
+    <div className="text-center py-4 text-emerald-700 font-semibold">
+      Loading more lectures...
+    </div>
+  )}
 </div>
-
-        ))}
-      </div>
 
         {audioModalLecture && (
           <AudioPlayerModal lecture={audioModalLecture} onClose={() => setAudioModalLecture(null)} />
