@@ -9,33 +9,59 @@ import privateAxiosInstance from "../../../auth/privateAxiosInstance";
 import handleBookmarkClick from "../../util/bookmark.js";
 import handleVideoLibraryToggle from "../../util/videoLibrary.js";
 import LectureCard from "./LectureCart.jsx";
+import LectureCardSkeleton from "../../components/loadingSkeletons/LectureCardSkeleton.jsx";
+import CategoryHeaderSkeleton from "../../components/loadingSkeletons/CategoryHeaderSkeleton.jsx";
 
 
 
 
-const CategoryLecture= () => {
+const CategoryLecture = () => {
   const [activeTab, setActiveTab] = useState("all"); // all | video | audio
   const [search, setSearch] = useState("");
   const location = useLocation();
   const [lectures, setLectures] = useState([]);
+  const [lectureCount, setLectureCount] = useState(0);
+  const [loadingSkeleton, setLoadingSkeleton] = useState(true);
+  
 
   const cat = location.state?.cat || null;
+
+  const fetchLectureCount = async () => {
+    if (!cat?.id) return;
+    try {
+      const res = await privateAxiosInstance.get(`/lectures/get-lecture-count/${cat.id}`);
+      if (res.status < 400) {
+        setLectureCount(res.data.count);
+        console.log("Lecture count fetched successfully:", res.data.count);
+      }
+    } catch (err) {
+      console.error("Failed to fetch lecture count:", err);
+      setLectureCount(0); // Set to 0 on error to avoid displaying incorrect count
+    }
+  };
+
+  useEffect(() => { 
+    if(cat?.id) {
+      fetchLectureCount();
+    setLoadingSkeleton(false); 
+    }
+  }, [cat?.id]);
 
 
 
   const [openMenuId, setOpenMenuId] = useState(null);
-const [lectureToDelete, setLectureToDelete] = useState(null);
-const [showUploadTypeModal, setShowUploadTypeModal] = useState(false);
+  const [lectureToDelete, setLectureToDelete] = useState(null);
+  const [showUploadTypeModal, setShowUploadTypeModal] = useState(false);
 
-const [videoForLibrary, setVideoForLibrary] = useState(null);
-const [isLibraryMutating, setIsLibraryMutating] = useState(false);
- 
+  const [videoForLibrary, setVideoForLibrary] = useState(null);
+  const [isLibraryMutating, setIsLibraryMutating] = useState(false);
+
   const [audioModalLecture, setAudioModalLecture] = useState(null);
   const navigate = useNavigate();
 
 
-  
-// Pagination & Observer State
+
+  // Pagination & Observer State
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -58,13 +84,13 @@ const [isLibraryMutating, setIsLibraryMutating] = useState(false);
     try {
       // 1. Trigger API toggle request to backend 
       await handleBookmarkClick(lectureId);
-      
+
       // 2. Map through lectures and instantly toggle the bookmark array state
-      setLectures(prevLectures => 
+      setLectures(prevLectures =>
         prevLectures.map(lecture => {
           if (lecture.id === lectureId) {
             const hasBookmark = lecture.bookmarks && lecture.bookmarks.length > 0;
-            
+
             return {
               ...lecture,
               // If it was bookmarked, empty the array to remove it. 
@@ -81,168 +107,193 @@ const [isLibraryMutating, setIsLibraryMutating] = useState(false);
   };
 
   const handleMediaDownloadClick = (lecture) => {
-  if (lecture.type === 'video') {
-    // Intercept video and prompt user with our explanation modal
-    setVideoForLibrary(lecture);
-  } else {
-    // Standard native browser download for MP3 files
-    if (lecture.url) {
-      const link = document.createElement('a');
-      link.href = lecture.url;
-      link.setAttribute('download', `${lecture.title}.mp3`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    if (lecture.type === 'video') {
+      // Intercept video and prompt user with our explanation modal
+      setVideoForLibrary(lecture);
     } else {
-      alert("Audio file link not available.");
-    }
-  }
-};
-
-const handleConfirmLibrarySave = async () => {
-  if (!videoForLibrary) return;
-  setIsLibraryMutating(true);
-  
-  try {
-    // Call our brand new shared utility function!
-    const data = await handleVideoLibraryToggle(videoForLibrary.id);
-    
-    if (data.status === 'success') {
-      // Instantly synchronize the UI icon checkmark state array
-      setLectures(prevLectures => 
-        prevLectures.map(lecture => {
-          if (lecture.id === videoForLibrary.id) {
-            const hasBookmark = lecture.bookmarks && lecture.bookmarks.length > 0;
-            return {
-              ...lecture,
-              bookmarks: hasBookmark ? [] : [{ id: 'temp-lib-id', lectureId: lecture.id }]
-            };
-          }
-          return lecture;
-        })
-      );
-    }
-    setVideoForLibrary(null);
-  } catch (err) {
-    console.error("Failed running library confirmation handler:", err);
-  } finally {
-    setIsLibraryMutating(false);
-  }
-};
-
-
-const formatDuration = (seconds) => {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s < 10 ? "0" : ""}${s}`;
-};
-
-const fetchLectures = async (pageNum, isReset = false) => {
-  if (!cat?.id) return;
-  setLoading(true);
-  
-  try {
-    // Build the query string dynamically
-    let url = `/lectures/get-lectures/${cat.id}?page=${pageNum}&limit=10`;
-    
-    // Only add search if there is actual text
-    if (search && search.trim() !== "") {
-      url += `&search=${encodeURIComponent(search.trim())}`;
-    }
-
-    const res = await privateAxiosInstance.get(url);
-    
-    const newLectures = res.data.lectures;
-    setLectures(prev => isReset ? newLectures : [...prev, ...newLectures]);
-    
-    // Set hasMore based on whether we received a full page
-    setHasMore(newLectures.length >= 10);
-  } catch (err) {
-    console.error(err);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-const handleDeleteLecture = async (lectureId) => {
-  try {
-    const res = await privateAxiosInstance.delete(`/lectures/delete-lecture/${lectureId}`);
-    if (res.status < 400) {
-      // remove from local state
-      setLectures(prev => prev.filter(l => l.id !== lectureId));
-      setLectureToDelete(null);
-      console.log('Lecture deleted successfully', res.data);
-    }
-  } catch (err) {
-    console.error(err.response?.data || err.message);
-  }
-};
-
-// play video or audio navigation
-const handlePlayLecture = (lecture) => {
-  if (lecture.type === "audio") {
-    setAudioModalLecture(lecture);
-  } else {
-    navigate("/video-player", {
-      state: {
-        lecture
+      // Standard native browser download for MP3 files
+      if (lecture.url) {
+        const link = document.createElement('a');
+        link.href = lecture.url;
+        link.setAttribute('download', `${lecture.title}.mp3`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } else {
+        alert("Audio file link not available.");
       }
-    });
-  }
-};
+    }
+  };
+
+  const handleConfirmLibrarySave = async () => {
+    if (!videoForLibrary) return;
+    setIsLibraryMutating(true);
+
+    try {
+      // Call our brand new shared utility function!
+      const data = await handleVideoLibraryToggle(videoForLibrary.id);
+
+      if (data.status === 'success') {
+        // Instantly synchronize the UI icon checkmark state array
+        setLectures(prevLectures =>
+          prevLectures.map(lecture => {
+            if (lecture.id === videoForLibrary.id) {
+              const hasBookmark = lecture.bookmarks && lecture.bookmarks.length > 0;
+              return {
+                ...lecture,
+                bookmarks: hasBookmark ? [] : [{ id: 'temp-lib-id', lectureId: lecture.id }]
+              };
+            }
+            return lecture;
+          })
+        );
+      }
+      setVideoForLibrary(null);
+    } catch (err) {
+      console.error("Failed running library confirmation handler:", err);
+    } finally {
+      setIsLibraryMutating(false);
+    }
+  };
 
 
-const filteredLectures = useMemo(() => {
-    // Since search is now handled by backend, we only filter by tab here
-    return activeTab === "all" ? lectures : lectures.filter(l => l.type === activeTab);
-  }, [activeTab, lectures]);
+  const formatDuration = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? "0" : ""}${s}`;
+  };
 
-useEffect(() => {
+
+
+
+  const handleDeleteLecture = async (lectureId) => {
+    try {
+      const res = await privateAxiosInstance.delete(`/lectures/delete-lecture/${lectureId}`);
+      if (res.status < 400) {
+        // remove from local state
+        setLectures(prev => prev.filter(l => l.id !== lectureId));
+        setLectureToDelete(null);
+        console.log('Lecture deleted successfully', res.data);
+      }
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+    }
+  };
+
+  // play video or audio navigation
+  const handlePlayLecture = (lecture) => {
+    if (lecture.type === "audio") {
+      setAudioModalLecture(lecture);
+    } else {
+      navigate("/video-player", {
+        state: {
+          lecture
+        }
+      });
+    }
+  };
+
+
+
+  const fetchLectures = async (pageNum, isReset = false) => {
+    if (!cat?.id) return;
+    setLoading(true);
+
+    try {
+      // 1. Prepare clean params
+      const params = {
+        page: pageNum,
+        limit: 10 // Use colon, not equals
+      };
+
+      // 2. Only add these if they have meaningful values
+      if (search && search.trim() !== "") {
+        params.search = search.trim();
+      }
+
+      if (activeTab !== "all") {
+        params.type = activeTab;
+      }
+
+      // 3. Send request
+      const res = await privateAxiosInstance.get(`/lectures/get-lectures/${cat.id}`, { params });
+
+      if (res.status < 400) {
+        const { lectures: newLectures, totalPages, currentPage } = res.data;
+
+        setLectures(prev => isReset ? newLectures : [...prev, ...newLectures]);
+
+        setHasMore(currentPage < totalPages);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setSearch("");
+    setActiveTab("all");
     setPage(1);
     fetchLectures(1, true);
-  }, [search, activeTab, cat?.id]);
+  }, [cat?.id]);
 
   // Fetch when page increments
   useEffect(() => {
     if (page > 1) fetchLectures(page, false);
-  }, [page]);
+  }, [page])
+
+
+  useEffect(() => {
+
+    if (search.trim().length === 0 && search !== "") {
+    return; // Don't fetch for empty strings that were just spaces
+  }
+
+    if (search || activeTab !== "all") {
+      const delayDebounce = setTimeout(() => {
+        fetchLectures(1, true);
+      }, 600);
+      return () => clearTimeout(delayDebounce);
+    }
+  }, [activeTab, search]); //here i remove cat.id because it already in separate useEffect and it cause double request when we change category and search or tab at the same time. so now when we change category it will trigger first useEffect and set page to 1 and fetch lectures with new cat id, and when we change search or tab it will trigger second useEffect and fetch lectures with new search or tab and reset to page 1. this way we avoid double request and also make sure that we always fetch the correct lectures based on the current category, search and tab.
+
+if (loadingSkeleton) {
+  return <CategoryHeaderSkeleton />;
+}
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-24">
-      
+    <div className="min-h-screen bg-gray-100 p-6  mb-6">
+
       {/* Category Header */}
-    <CategoryLactureHeader /> 
-
-    {/* Audio Player Modal */}
+      <CategoryLactureHeader cat={cat} lectureCount={lectureCount} />
 
 
 
+      <div className="flex mb-4">
+        <button
+          onClick={() => setShowUploadTypeModal(true)}
+          className="bg-emerald-700 text-white px-4 py-2 rounded-md  ml-auto font-semibold hover:bg-emerald-800"
+        >
+          + Upload Lecture
+        </button>
+      </div>
 
 
-<div className="flex mb-4">
-  <button
-  onClick={() => setShowUploadTypeModal(true)}
-  className="bg-emerald-700 text-white px-4 py-2 rounded-md  ml-auto font-semibold hover:bg-emerald-800"
->
-  + Upload Lecture
-</button>
-</div>
-
-
-{showUploadTypeModal && (
- <UploadLectureModal
-    setShowUploadTypeModal={setShowUploadTypeModal}
-    cat={cat}
-    fetchLectures={fetchLectures}
-    setLectures={setLectures}
- />
-)}
+      {showUploadTypeModal && (
+        <UploadLectureModal
+          setShowUploadTypeModal={setShowUploadTypeModal}
+          cat={cat}
+          fetchLectures={fetchLectures}
+          setLectures={setLectures}
+        />
+      )}
 
       {/* Search + Tabs */}
       <div className="bg-white rounded-xl shadow p-4 mb-6 sticky top-20 z-10">
         <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between ">
-          
+
           {/* Search */}
           <div className="relative w-full sm:w-80">
             <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
@@ -251,8 +302,13 @@ useEffect(() => {
               placeholder="Search lectures..."
               value={search}
               onChange={(e) => {
-                setSearch(e.target.value);
-                setActiveTab("all");
+                const value = e.target.value;
+                setSearch(value);
+
+                // If user clears the box, fetch immediately (don't wait for debounce)
+                if (value.trim() === "") {
+                  fetchLectures(1, true);
+                }
               }}
               className="pl-9 pr-3 py-2 w-full border rounded-md focus:ring-2 focus:ring-emerald-300 outline-none"
             />
@@ -264,11 +320,10 @@ useEffect(() => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-md text-sm font-semibold ${
-                  activeTab === tab
+                className={`px-4 py-2 rounded-md text-sm font-semibold ${activeTab === tab
                     ? "bg-emerald-700 text-white"
                     : "bg-emerald-100 text-emerald-700"
-                }`}
+                  }`}
               >
                 {tab === "all" ? "All" : tab === "video" ? "Videos" : "Audio"}
               </button>
@@ -278,134 +333,138 @@ useEffect(() => {
       </div>
 
       {/* Lectures List */}
-   
-{/* Lectures List */}
-<div className="space-y-4 max-w-4xl mx-auto">
-  {filteredLectures.length === 0 && !loading && (
-    <div className="text-center text-gray-500 py-10">No lectures found.</div>
-  )}
 
-  {filteredLectures.map((lecture, index) => {
-    // Check if this is the last element in the list
-    if (filteredLectures.length === index + 1) {
-      return (
-        <div ref={lastLectureElementRef} key={lecture.id}>
-          <LectureCard 
-            lecture={lecture}
-            teacherName={cat?.teacherName}
-            formatDuration={formatDuration}
-            onPlay={handlePlayLecture}
-            onBookmark={handleBookmarkToggle}
-            onDownload={handleMediaDownloadClick}
-            onDelete={setLectureToDelete}
-          />
-        </div>
-      );
-    } else {
-      // Standard render for all other elements
-      return (
-        <LectureCard 
-          key={lecture.id}
-          lecture={lecture}
-          teacherName={cat?.teacherName}
-          formatDuration={formatDuration}
-          onPlay={handlePlayLecture}
-          onBookmark={handleBookmarkToggle}
-          onDownload={handleMediaDownloadClick}
-          onDelete={setLectureToDelete}
-        />
-      );
-    }
-  })}
-
-  {/* Loading indicator at the bottom */}
-  {loading && (
-    <div className="text-center py-4 text-emerald-700 font-semibold">
-      Loading more lectures...
-    </div>
-  )}
-</div>
-
-        {audioModalLecture && (
-          <AudioPlayerModal lecture={audioModalLecture} onClose={() => setAudioModalLecture(null)} />
+      {/* Lectures List */}
+      <div className="space-y-4 max-w-4xl mx-auto">
+        {lectures.length === 0 && !loading && ( // <--- Updated
+          <div className="text-center text-gray-500 py-10">No lectures found.</div>
         )}
 
+        {lectures.map((lecture, index) => {
+          // Check if this is the last element in the list
+          if (lectures.length === index + 1) {
+            return (
+              <div ref={lastLectureElementRef} key={lecture.id}>
+                <LectureCard
+                  lecture={lecture}
+                  teacherName={cat?.teacherName}
+                  formatDuration={formatDuration}
+                  onPlay={handlePlayLecture}
+                  onBookmark={handleBookmarkToggle}
+                  onDownload={handleMediaDownloadClick}
+                  onDelete={setLectureToDelete}
+                />
+              </div>
+            );
+          } else {
+            // Standard render for all other elements
+            return (
+              <LectureCard
+                key={lecture.id}
+                lecture={lecture}
+                teacherName={cat?.teacherName}
+                formatDuration={formatDuration}
+                onPlay={handlePlayLecture}
+                onBookmark={handleBookmarkToggle}
+                onDownload={handleMediaDownloadClick}
+                onDelete={setLectureToDelete}
+              />
+            );
+          }
+        })}
+
+        {/* Loading indicator at the bottom */}
+        {loading && (
+          <>
+            <LectureCardSkeleton />
+            <LectureCardSkeleton />
+            <LectureCardSkeleton />
+          </>
+          
+        )}
+      </div>
+
+      {audioModalLecture && (
+        <AudioPlayerModal lecture={audioModalLecture} onClose={() => setAudioModalLecture(null)} />
+      )}
+
       {lectureToDelete && (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white rounded-xl p-6 w-96">
-      <h2 className="text-lg font-semibold text-gray-800">
-        Delete Lecture
-      </h2>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-96">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Delete Lecture
+            </h2>
 
-      <p className="text-sm text-gray-600 mt-2">
-        Are you sure you want to delete{" "}
-        <span className="font-semibold">
-          {lectureToDelete.title}
-        </span>
-        ? This action cannot be undone.
-      </p>
+            <p className="text-sm text-gray-600 mt-2">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">
+                {lectureToDelete.title}
+              </span>
+              ? This action cannot be undone.
+            </p>
 
-      <div className="flex justify-end gap-3 mt-6">
-        <button
-          onClick={() => setLectureToDelete(null)}
-          className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
-        >
-          Cancel
-        </button>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setLectureToDelete(null)}
+                className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
 
-        <button
-          onClick={() => {
-            // later: deleteLecture(lectureToDelete.id)
-            setLectureToDelete(null);
-            handleDeleteLecture(lectureToDelete.id);
-          }}
-          className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
-        >
-          Delete
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+              <button
+                onClick={() => {
+                  // later: deleteLecture(lectureToDelete.id)
+                  setLectureToDelete(null);
+                  handleDeleteLecture(lectureToDelete.id);
+                }}
+                className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-{/* 🟢 Educational Video Library Confirmation Modal */}
-{videoForLibrary && (
-  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-    <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
-      <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-        <Video className="text-emerald-700 w-5 h-5" /> Save to In-App Video Library?
-      </h2>
-      <p className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2 py-1 rounded inline-block mt-2">
-        Target Lecture: {videoForLibrary.title}
-      </p>
-      <p className="text-sm text-gray-600 mt-3 leading-relaxed">
-        To save your device's storage space, this video will be securely added to your online <strong>Video Library</strong> rather than downloading directly onto your local browser file system memory.
-      </p>
-      <p className="text-xs text-gray-400 mt-2 italic">
-        💡 You can watch and stream this lecture smoothly inside your library dashboard anytime!
-      </p>
-      <div className="flex justify-end gap-3 mt-6">
-        <button
-          onClick={() => setVideoForLibrary(null)}
-          disabled={isLibraryMutating}
-          className="px-4 py-2 rounded-md bg-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-300 transition"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleConfirmLibrarySave}
-          disabled={isLibraryMutating}
-          className="px-4 py-2 rounded-md bg-emerald-700 text-white font-semibold text-sm hover:bg-emerald-800 transition shadow-sm disabled:opacity-50"
-        >
-          {isLibraryMutating ? "Saving..." : "Yes, Save Video"}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+      {/* 🟢 Educational Video Library Confirmation Modal */}
+      {videoForLibrary && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
+            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+              <Video className="text-emerald-700 w-5 h-5" /> Save to In-App Video Library?
+            </h2>
+            <p className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2 py-1 rounded inline-block mt-2">
+              Target Lecture: {videoForLibrary.title}
+            </p>
+            <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+              To save your device's storage space, this video will be securely added to your online <strong>Video Library</strong> rather than downloading directly onto your local browser file system memory.
+            </p>
+            <p className="text-xs text-gray-400 mt-2 italic">
+              💡 You can watch and stream this lecture smoothly inside your library dashboard anytime!
+            </p>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setVideoForLibrary(null)}
+                disabled={isLibraryMutating}
+                className="px-4 py-2 rounded-md bg-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmLibrarySave}
+                disabled={isLibraryMutating}
+                className="px-4 py-2 rounded-md bg-emerald-700 text-white font-semibold text-sm hover:bg-emerald-800 transition shadow-sm disabled:opacity-50"
+              >
+                {isLibraryMutating ? "Saving..." : "Yes, Save Video"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
+
 };
 
 export default CategoryLecture; 

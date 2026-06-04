@@ -164,3 +164,12 @@ const Header = ({ onToggleSidebar }) => {
 };
 
 export default Header;
+
+
+// setHasMore(newLectures.length >= 10);
+
+  // Association check
+    // if (!Lecture.associations.bookmarks) {
+    //   Lecture.hasMany(Bookmark, { foreignKey: 'lectureId', as: 'bookmarks', onDelete: 'CASCADE' });
+    //   Bookmark.belongsTo(Lecture, { foreignKey: 'lectureId', as: 'lecture' });
+    // }

@@ -41,6 +41,17 @@ const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLec
     }
   }, [videoUrl]);
 
+  useEffect(() => {
+  const handleBeforeUnload = (e) => {
+    if (loading) {
+      e.preventDefault();
+      e.returnValue = "Upload in progress. Are you sure you want to leave?";
+    }
+  };
+  window.addEventListener("beforeunload", handleBeforeUnload);
+  return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+}, [loading]);
+
   const handleTypeChange = (selectedType) => {
     setType(selectedType);
     setError('');
@@ -79,6 +90,7 @@ const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLec
     e.preventDefault();
     setError('');
     setSuccess('');
+    if (loading) return;
 
     if (!title.trim()) {
       setError('Please provide a title for the lecture.');
@@ -190,6 +202,7 @@ const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLec
             <label className="grid gap-2 text-sm text-slate-700">
               <span className="font-medium">Lecture Title</span>
               <input
+              disabled={loading}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Enter lecture title"
