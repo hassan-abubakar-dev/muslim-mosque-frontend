@@ -265,7 +265,7 @@ if (loadingSkeleton) {
           <div className="text-center text-gray-500 py-10">No lectures found.</div>
         )}
 
-      {lectures.map((lecture, index) => {
+      {lectures.length > 0 && lectures.map((lecture, index) => {
   const isLast = lectures.length === index + 1;
   
   const card = (
@@ -368,17 +368,23 @@ if (loadingSkeleton) {
       )}
 
       {/* 🟢 Educational Video Library Confirmation Modal */}
+// Inside CategoryLecture.jsx
 <DownloadConfirmationModal 
   lecture={videoForLibrary}
   isOpen={!!videoForLibrary}
   onClose={() => setVideoForLibrary(null)}
-  // Use the utility method directly
-  onConfirm={() => lectureUtils.confirmLibrarySave(
-    videoForLibrary, 
-    setLectures, 
-    setIsLibraryMutating, 
-    setVideoForLibrary
-  )}
+  onConfirm={async () => {
+    await lectureUtils.confirmLibrarySave(
+      videoForLibrary, 
+      (isSaved) => {
+        setLectures(prev => prev.map(l => 
+          l.id === videoForLibrary.id ? { ...l, isSaved } : l
+        ));
+      }, 
+      setIsLibraryMutating, 
+      setVideoForLibrary
+    );
+  }}
   isMutating={isLibraryMutating}
 />
     </div>

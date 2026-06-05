@@ -1,6 +1,6 @@
 
 const CategoryLactureHeader = ({cat, lectureCount}) => {
-  console.log("Rendering CategoryLactureHeader with cat:", cat, "and lectureCount:", lectureCount);
+  
 
     return (
          <div className="bg-white rounded-xl shadow p-6 mb-6 flex flex-col md:flex-row gap-6 items-center">

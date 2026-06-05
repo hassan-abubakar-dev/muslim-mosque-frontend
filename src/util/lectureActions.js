@@ -59,23 +59,23 @@ handleDownload: (lecture, setVideoForLibrary) => {
       document.body.removeChild(link);
     }
   },
+  
 
-  confirmLibrarySave: async (videoForLibrary, setLectures, setIsLibraryMutating, setVideoForLibrary) => {
-    if (!videoForLibrary) return;
-    setIsLibraryMutating(true);
-    try {
-      const data = await lectureUtils.toggleVideoLibrary(videoForLibrary.id);
-      if (data.status === 'success') {
-        console.log(`Lecture ${videoForLibrary.id} library status:`, data.isSaved);
-        setLectures(prev => prev.map(l => 
-          l.id === videoForLibrary.id 
-            ? { ...l, bookmarks: l.bookmarks?.length > 0 ? [] : [{ id: 'temp-lib-id', lectureId: l.id }] } 
-            : l
-        ));
-      }
-      setVideoForLibrary(null);
-    } finally {
-      setIsLibraryMutating(false);
+
+confirmLibrarySave: async (videoForLibrary, updateStateCallback, setIsLibraryMutating, setVideoForLibrary) => {
+  if (!videoForLibrary) return;
+  setIsLibraryMutating(true);
+  try {
+    const data = await lectureUtils.toggleVideoLibrary(videoForLibrary.id);
+    if (data.status === 'success') {
+      // It executes the specific instructions passed by the page
+      updateStateCallback(data.isSaved);
     }
+    setVideoForLibrary(null);
+  } catch (err) {
+    console.error("Library save error:", err);
+  } finally {
+    setIsLibraryMutating(false);
   }
+}
 };

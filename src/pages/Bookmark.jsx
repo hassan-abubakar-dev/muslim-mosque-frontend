@@ -6,11 +6,16 @@ import privateAxiosInstance from "../../auth/privateAxiosInstance.js";
 import { lectureUtils } from "../util/lectureActions.js";
 import LectureCard from "../components/LectureCard.jsx";
 import LectureCardSkeleton from "../components/loadingSkeletons/LectureCardSkeleton.jsx";
+import DownloadConfirmationModal from "../components/DownloadConfirmationModal.jsx";
 
 const BookmarkPage = () => {
   const [activeTab, setActiveTab] = useState("all");
   const [search, setSearch] = useState("");
   const [bookmarks, setBookmarks] = useState([]);
+
+
+  const [videoForLibrary, setVideoForLibrary] = useState(null);
+  const [isLibraryMutating, setIsLibraryMutating] = useState(false);
 
   // Pagination & Observer State
   const [page, setPage] = useState(1);
@@ -151,41 +156,71 @@ const BookmarkPage = () => {
           <div className="text-center text-gray-500 py-10">No bookmarks found.</div>
         )}
 
-        {bookmarks.map((bookmark, index) => {
-          const isLast = bookmarks.length === index + 1;
-          const card = (
-            <LectureCard
-              key={bookmark.id}
-              mode="bookmark"
-              lecture={bookmark.lecture}
-              formatDuration={formatDuration}
-              onPlay={handlePlayLecture}
-              // Change: Use the local handler instead of re-fetching
-              onUpdateState={() => handleUpdateState(bookmark.lecture.id)}
-            />
-          );
-          return isLast ? <div ref={lastBookmarkElementRef} key={bookmark.id}>{card}</div> : card;
-        })}
+      {/* Change this part in your render section */}
+{Array.isArray(bookmarks) && bookmarks.map((bookmark, index) => {
+  const isLast = bookmarks.length === index + 1;
+  const card = (
+    <LectureCard
+      key={bookmark.id || index} // Fallback to index if ID is missing
+      mode="bookmark"
+      lecture={bookmark.lecture}
+      formatDuration={formatDuration}
+      onPlay={handlePlayLecture}
+      onUpdateState={() => handleUpdateState(bookmark.lecture.id)}
+      onDownload={(lec) => {
+        if (lec.type === 'video') {
+          setVideoForLibrary(lec);
+        } else {
+          lectureUtils.handleDownload(lec);
+        }
+      }}
+    />
+  );
+  return isLast ? <div ref={lastBookmarkElementRef} key={bookmark.id}>{card}</div> : card;
+})}
 
         {loading && <LectureCardSkeleton />}
       </div>
 
-     {audioModalLecture && (
-  <AudioPlayerModal
-    lecture={audioModalLecture}
-    onClose={() => setAudioModalLecture(null)}
-    fromBookmark={true}
-    onBookmark={async () => {
-      // 1. Perform the toggle
-      await lectureUtils.toggleBookmark(audioModalLecture.id);
-      // 2. Update state locally
-      handleUpdateState(audioModalLecture.id);
-      // 3. Close the modal
-      setAudioModalLecture(null);
-    }}
-    onDownload={() => lectureUtils.handleDownload(audioModalLecture)}
-  />
-)}
+      {audioModalLecture && (
+        <AudioPlayerModal
+          lecture={audioModalLecture}
+          onClose={() => setAudioModalLecture(null)}
+          fromBookmark={true}
+          onBookmark={async () => {
+            // 1. Perform the toggle
+            await lectureUtils.toggleBookmark(audioModalLecture.id);
+            // 2. Update state locally
+            handleUpdateState(audioModalLecture.id);
+            // 3. Close the modal
+            setAudioModalLecture(null);
+          }}
+          onDownload={() => lectureUtils.handleDownload(audioModalLecture)}
+        />
+      )}
+
+
+     // Inside BookmarkPage.jsx
+<DownloadConfirmationModal 
+  lecture={videoForLibrary}
+  isOpen={!!videoForLibrary}
+  onClose={() => setVideoForLibrary(null)}
+  onConfirm={async () => {
+    await lectureUtils.confirmLibrarySave(
+      videoForLibrary, 
+      (isSaved) => {
+        setBookmarks(prev => prev.map(b => 
+          b.lecture.id === videoForLibrary.id 
+            ? { ...b, lecture: { ...b.lecture, isSaved } } 
+            : b
+        ));
+      },
+      setIsLibraryMutating, 
+      setVideoForLibrary
+    );
+  }}
+  isMutating={isLibraryMutating}
+/>
     </div>
   );
 };
