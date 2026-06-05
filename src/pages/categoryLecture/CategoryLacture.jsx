@@ -6,11 +6,11 @@ import CategoryLactureHeader from "./CateoryLactureHeader";
 import UploadLectureModal from './UploadLectureModal';
 import AudioPlayerModal from './AudioPlayerModal';
 import privateAxiosInstance from "../../../auth/privateAxiosInstance";
-import handleBookmarkClick from "../../util/bookmark.js";
-import handleVideoLibraryToggle from "../../util/videoLibrary.js";
-import LectureCard from "./LectureCart.jsx";
+import LectureCard from "../../components/LectureCard.jsx";
 import LectureCardSkeleton from "../../components/loadingSkeletons/LectureCardSkeleton.jsx";
 import CategoryHeaderSkeleton from "../../components/loadingSkeletons/CategoryHeaderSkeleton.jsx";
+import DownloadConfirmationModal from "../../components/DownloadConfirmationModal.jsx";
+import { lectureUtils } from "../../util/lectureActions.js";
 
 
 
@@ -80,82 +80,6 @@ const CategoryLecture = () => {
     if (node) observer.current.observe(node);
   }, [loading, hasMore]);
 
-  const handleBookmarkToggle = async (lectureId) => {
-    try {
-      // 1. Trigger API toggle request to backend 
-      await handleBookmarkClick(lectureId);
-
-      // 2. Map through lectures and instantly toggle the bookmark array state
-      setLectures(prevLectures =>
-        prevLectures.map(lecture => {
-          if (lecture.id === lectureId) {
-            const hasBookmark = lecture.bookmarks && lecture.bookmarks.length > 0;
-
-            return {
-              ...lecture,
-              // If it was bookmarked, empty the array to remove it. 
-              // If it wasn't, add a mock object to turn the icon green!
-              bookmarks: hasBookmark ? [] : [{ id: 'temp-id', lectureId }]
-            };
-          }
-          return lecture;
-        })
-      );
-    } catch (err) {
-      console.error("Failed to toggle bookmark state:", err);
-    }
-  };
-
-  const handleMediaDownloadClick = (lecture) => {
-    if (lecture.type === 'video') {
-      // Intercept video and prompt user with our explanation modal
-      setVideoForLibrary(lecture);
-    } else {
-      // Standard native browser download for MP3 files
-      if (lecture.url) {
-        const link = document.createElement('a');
-        link.href = lecture.url;
-        link.setAttribute('download', `${lecture.title}.mp3`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } else {
-        alert("Audio file link not available.");
-      }
-    }
-  };
-
-  const handleConfirmLibrarySave = async () => {
-    if (!videoForLibrary) return;
-    setIsLibraryMutating(true);
-
-    try {
-      // Call our brand new shared utility function!
-      const data = await handleVideoLibraryToggle(videoForLibrary.id);
-
-      if (data.status === 'success') {
-        // Instantly synchronize the UI icon checkmark state array
-        setLectures(prevLectures =>
-          prevLectures.map(lecture => {
-            if (lecture.id === videoForLibrary.id) {
-              const hasBookmark = lecture.bookmarks && lecture.bookmarks.length > 0;
-              return {
-                ...lecture,
-                bookmarks: hasBookmark ? [] : [{ id: 'temp-lib-id', lectureId: lecture.id }]
-              };
-            }
-            return lecture;
-          })
-        );
-      }
-      setVideoForLibrary(null);
-    } catch (err) {
-      console.error("Failed running library confirmation handler:", err);
-    } finally {
-      setIsLibraryMutating(false);
-    }
-  };
-
 
   const formatDuration = (seconds) => {
     const m = Math.floor(seconds / 60);
@@ -187,7 +111,8 @@ const CategoryLecture = () => {
     } else {
       navigate("/video-player", {
         state: {
-          lecture
+          lecture,
+          fromBookmark: false
         }
       });
     }
@@ -340,38 +265,33 @@ if (loadingSkeleton) {
           <div className="text-center text-gray-500 py-10">No lectures found.</div>
         )}
 
-        {lectures.map((lecture, index) => {
-          // Check if this is the last element in the list
-          if (lectures.length === index + 1) {
-            return (
-              <div ref={lastLectureElementRef} key={lecture.id}>
-                <LectureCard
-                  lecture={lecture}
-                  teacherName={cat?.teacherName}
-                  formatDuration={formatDuration}
-                  onPlay={handlePlayLecture}
-                  onBookmark={handleBookmarkToggle}
-                  onDownload={handleMediaDownloadClick}
-                  onDelete={setLectureToDelete}
-                />
-              </div>
-            );
-          } else {
-            // Standard render for all other elements
-            return (
-              <LectureCard
-                key={lecture.id}
-                lecture={lecture}
-                teacherName={cat?.teacherName}
-                formatDuration={formatDuration}
-                onPlay={handlePlayLecture}
-                onBookmark={handleBookmarkToggle}
-                onDownload={handleMediaDownloadClick}
-                onDelete={setLectureToDelete}
-              />
-            );
-          }
-        })}
+      {lectures.map((lecture, index) => {
+  const isLast = lectures.length === index + 1;
+  
+  const card = (
+  // In CategoryLecture.jsx, update the LectureCard component:
+<LectureCard
+  key={lecture.id}
+  mode="category"
+  lecture={lecture}
+  teacherName={cat?.teacherName}
+  formatDuration={formatDuration}
+  onPlay={handlePlayLecture}
+  onUpdateState={() => fetchLectures(1, true)}
+  onDeleteRequest={setLectureToDelete}
+  // Add this new prop:
+  onDownload={(lec) => {
+    if (lec.type === 'video') {
+      setVideoForLibrary(lec); // This opens the confirmation modal
+    } else {
+      lectureUtils.handleDownload(lec); // Direct download for audio
+    }
+  }}
+/>
+  );
+
+  return isLast ? <div ref={lastLectureElementRef} key={lecture.id}>{card}</div> : card;
+})}
 
         {/* Loading indicator at the bottom */}
         {loading && (
@@ -384,9 +304,30 @@ if (loadingSkeleton) {
         )}
       </div>
 
-      {audioModalLecture && (
-        <AudioPlayerModal lecture={audioModalLecture} onClose={() => setAudioModalLecture(null)} />
-      )}
+   
+{audioModalLecture && (
+  <AudioPlayerModal 
+    lecture={audioModalLecture} 
+    onClose={() => setAudioModalLecture(null)}
+    fromBookmark={false}
+    
+    // CHANGE THIS PROP:
+    onBookmark={async (lectureId, time) => {
+      // 1. Call the API
+      await lectureUtils.toggleBookmark(lectureId, time);
+      
+      // 2. Update the State so the UI refreshes immediately
+      lectureUtils.updateBookmarkState(
+        lectureId, 
+        time, 
+        setLectures, 
+        setAudioModalLecture
+      );
+    }}
+    
+    onDownload={() => lectureUtils.handleDownload(audioModalLecture)}
+  />
+)}
 
       {lectureToDelete && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -427,41 +368,19 @@ if (loadingSkeleton) {
       )}
 
       {/* 🟢 Educational Video Library Confirmation Modal */}
-      {videoForLibrary && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4 shadow-xl">
-            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-              <Video className="text-emerald-700 w-5 h-5" /> Save to In-App Video Library?
-            </h2>
-            <p className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2 py-1 rounded inline-block mt-2">
-              Target Lecture: {videoForLibrary.title}
-            </p>
-            <p className="text-sm text-gray-600 mt-3 leading-relaxed">
-              To save your device's storage space, this video will be securely added to your online <strong>Video Library</strong> rather than downloading directly onto your local browser file system memory.
-            </p>
-            <p className="text-xs text-gray-400 mt-2 italic">
-              💡 You can watch and stream this lecture smoothly inside your library dashboard anytime!
-            </p>
-            <div className="flex justify-end gap-3 mt-6">
-              <button
-                onClick={() => setVideoForLibrary(null)}
-                disabled={isLibraryMutating}
-                className="px-4 py-2 rounded-md bg-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-300 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmLibrarySave}
-                disabled={isLibraryMutating}
-                className="px-4 py-2 rounded-md bg-emerald-700 text-white font-semibold text-sm hover:bg-emerald-800 transition shadow-sm disabled:opacity-50"
-              >
-                {isLibraryMutating ? "Saving..." : "Yes, Save Video"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+<DownloadConfirmationModal 
+  lecture={videoForLibrary}
+  isOpen={!!videoForLibrary}
+  onClose={() => setVideoForLibrary(null)}
+  // Use the utility method directly
+  onConfirm={() => lectureUtils.confirmLibrarySave(
+    videoForLibrary, 
+    setLectures, 
+    setIsLibraryMutating, 
+    setVideoForLibrary
+  )}
+  isMutating={isLibraryMutating}
+/>
     </div>
   );
 

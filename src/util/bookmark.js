@@ -3,7 +3,7 @@ import privateAxiosInstance from '../../auth/privateAxiosInstance.js';
 
 const handleBookmarkClick = async (lectureId, lastPosition = 0) => { 
     const body = {
-        lastPosition: lastPosition ? lastPosition : 0
+        lastPosition
     };
   try {
     // Implementation for bookmarking lecture
