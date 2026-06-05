@@ -41,10 +41,10 @@ const navigate = useNavigate();
   }
 
   return (
-       <div className={`bg-white mt-3 mx-4 rounded-xl shadow-xl p-1.5  absolute top-16 right-0 w-64 z-50 ${!showProfileMenu && 'hidden'}` }
+       <div className={`bg-white mt-3 rounded-xl shadow-xl p-1.5 absolute top-16 right-2 left-auto w-64 max-w-[min(100vw-1rem,16rem)] z-50 ${!showProfileMenu && 'hidden'}` }
                              style={{
                     boxShadow: '0px -4px 6px rgba(0, 0, 0, 0.2), 0px 4px 6px rgba(0, 0, 0, 0.2)'
-                        }}  
+                        }}
                         >
                         
                       <div className='hover:bg-gray-50 flex items-center py-2 px-3 rounded-xl cursor-pointer' onClick={() => { navigate('/profile'); setShowProfileMenu(false);}}>

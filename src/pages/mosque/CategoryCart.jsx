@@ -5,23 +5,20 @@ import privateAxiosInstance from "../../../auth/privateAxiosInstance"; // Adjust
 import truncateByWords from "../../util/splitWord";
 
 const CategoryCart = ({ categories, isOwner, setCategories, setIsEdit, setShowModal, setNewCategory }) => {
-    const [openMenuId, setOpenMenuId] = useState(false);
-    const [showDeleteCategory, setShowDeleteCategory] = useState(false);
+    const [openMenuId, setOpenMenuId] = useState(null);
+    const [showDeleteCategory, setShowDeleteCategory] = useState(null);
     const navigate = useNavigate();
 
     const handleDeleteCategory = async (categoryId) => {
-
         try {
            const res = await privateAxiosInstance.delete(`/categories/delete-category/${categoryId}`);
             
-        if(res.status < 400){
-            setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
-            setShowDeleteCategory(false);
-        }
-            
+            if (res.status < 400) {
+                setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
+                setShowDeleteCategory(null);
+            }
         } catch (err) {
             console.error("Delete failed:", err);
-           
         }
     };
 
@@ -38,36 +35,40 @@ const CategoryCart = ({ categories, isOwner, setCategories, setIsEdit, setShowMo
                     )}
                     
                     <div className="p-4 flex flex-col flex-1">
-                        <div className="flex justify-between items-start">
-                            <h4 className="font-bold text-lg text-gray-800 text-nowrap">{cat.name}</h4>
-                            <span className="text-sm text-gray-500 font-medium mt-1.5 ml-10 text-nowrap">{truncateByWords(cat.teacherName, 3)}</span>
+                        <div className="flex justify-between items-start gap-3 min-w-0">
+                            <h4 className="font-bold text-lg text-gray-800 truncate min-w-0">{cat.name}</h4>
+                            <span className="text-sm text-gray-500 font-medium mt-1.5 text-right shrink-0">
+                                {truncateByWords(cat.teacherName, 3)}
+                            </span>
                         </div>
                         
-                        {cat.information && <p className="text-sm text-gray-600 mt-2 whitespace-nowrap">{truncateByWords(cat.information, 6)}</p>}
+                        {cat.information && (
+                            <p className="text-sm text-gray-600 mt-2 break-words">
+                                {truncateByWords(cat.information, 6)}
+                            </p>
+                        )}
                         
-                        <div className="mt-auto flex items-center justify-between pt-4">
+                        <div className="mt-auto flex items-center justify-between gap-3 pt-4 flex-wrap">
                             <button 
-                                className="bg-emerald-700 text-white px-4 py-1.5 whitespace-nowrap rounded-md text-sm hover:bg-emerald-800" 
+                                className="bg-emerald-700 text-white px-4 py-1.5 rounded-md text-sm hover:bg-emerald-800"
                                 onClick={() => navigate('/category/lacture', { state: { cat } })}
                             >
                                 View Lectures
                             </button>
 
-                              {isOwner && (
-                                // 2. Remove ml-24, let flexbox handle the spacing
+                            {isOwner && (
                                 <div className="relative">
                                     <button 
                                         onClick={() => setOpenMenuId(openMenuId === cat.id ? null : cat.id)} 
-                                        className="p-2 rounded-full hover:bg-gray-100 md:ml-16"
+                                        className="p-2 rounded-full hover:bg-gray-100"
                                     >
                                         <MoreVertical className="w-5 h-5 text-gray-600" />
                                     </button>
 
-                                    {/* 3. Position the menu absolutely relative to this specific wrapper */}
                                     {openMenuId === cat.id && (
                                         <div className="absolute right-0 bottom-full mb-2 bg-white border rounded-lg shadow-xl w-36 z-50">
                                             <button
-                                                onClick={() => { setIsEdit(true); setShowModal(true); setOpenMenuId(null); setNewCategory(cat) }}
+                                                onClick={() => { setIsEdit(true); setShowModal(true); setOpenMenuId(null); setNewCategory(cat); }}
                                                 className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 w-full"
                                             >
                                                 <Pencil className="w-4 h-4 text-emerald-700" /> Edit
@@ -80,28 +81,23 @@ const CategoryCart = ({ categories, isOwner, setCategories, setIsEdit, setShowMo
                                             </button>
                                         </div>
                                     )}
-
-                                    
-                    {showDeleteCategory && (
-                            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-                            <div className="bg-white rounded-xl p-6 w-96">
-                                <h2 className="text-lg font-semibold">Delete Category</h2>
-                                <p className="text-sm mt-2">Are you sure you want to delete {cat.name}?</p>
-                                <div className="flex justify-end gap-3 mt-6">
-                                    <button onClick={() => setShowDeleteCategory(null)} className="px-4 py-2 bg-gray-200 rounded-md">Cancel</button>
-                                    <button onClick={() => handleDeleteCategory(cat.id)} className="px-4 py-2 bg-red-600 text-white rounded-md">Delete</button>
                                 </div>
-                            </div>
-                        </div>
-                    )}
-                                </div>
-
-                                
                             )}
                         </div>
-                    </div>
 
-           
+                        {showDeleteCategory === cat.id && (
+                            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                                <div className="bg-white rounded-xl p-6 w-96 max-w-full mx-4">
+                                    <h2 className="text-lg font-semibold">Delete Category</h2>
+                                    <p className="text-sm mt-2">Are you sure you want to delete {cat.name}?</p>
+                                    <div className="flex justify-end gap-3 mt-6 flex-wrap">
+                                        <button onClick={() => setShowDeleteCategory(null)} className="px-4 py-2 bg-gray-200 rounded-md">Cancel</button>
+                                        <button onClick={() => handleDeleteCategory(cat.id)} className="px-4 py-2 bg-red-600 text-white rounded-md">Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             ))}
         </div>

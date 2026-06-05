@@ -368,7 +368,7 @@ if (loadingSkeleton) {
       )}
 
       {/* 🟢 Educational Video Library Confirmation Modal */}
-// Inside CategoryLecture.jsx
+
 <DownloadConfirmationModal 
   lecture={videoForLibrary}
   isOpen={!!videoForLibrary}

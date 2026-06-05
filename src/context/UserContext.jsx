@@ -14,11 +14,19 @@ export const ContextProvider = ({ children}) => {
     const [authLoading, setAuthLoading] = useState(true);
     const [logOutError, setLogOutError] = useState(false);
     const [followedMosques, setFollowedMosques] = useState([]);
-    const [notifications, setNotifications] = useState([]);
+   
       const [showProfileMenu, setShowProfileMenu] = useState(false);
       const [toastToCreateAccountMessage, setToastToCreateAccountMessage] = useState(null);
       const [mosquePages, setMosquePages] = useState(1);
       const [followMosqueIds, setFollowMosqueIds] = useState([]);
+
+      const [notifications, setNotifications] = useState([]);
+const [notificationsCount, setNotificationsCount] = useState(0); // For the bell badge
+const [hasMoreNotifications, setHasMoreNotifications] = useState(true);
+const [isFetchingNotifications, setIsFetchingNotifications] = useState(false);
+
+
+      
 
       // for mosque list in homepage and search
     const [mosques, setMosques] = useState([]);
@@ -78,17 +86,35 @@ const [isFetching, setIsFetching] = useState(false);
       }
     };
 
-     const fetchNotifications = async() => {
+    // 3. New helper to clear the badge
+const resetNotificationCount = () => {
+    setNotificationsCount(0);
+};
+
+const fetchNotifications = async (page = 1, limit = 15, reset = false) => {
+    setIsFetchingNotifications(true);
     try {
-      const res = await privateAxiosInstance.get('/notifications/get');
-      setNotifications(res.data.notifications);
-      // console.log('Fetched notifications:', res.data.notifications);
-      return res.data.notifications;
+        const res = await privateAxiosInstance.get('/notifications/get', {
+            params: { page, limit }
+        });
+        
+        if (res.status < 400) {
+            const { notifications: newNotifs, totalItems } = res.data;
+            console.log('notifications', newNotifs);
+            
+          
+            setNotifications(prev => reset ? newNotifs : [...prev, ...newNotifs]);
+            // Pagination check
+            setHasMoreNotifications(newNotifs.length === limit);
+        }
     } catch (err) {
-      console.error('Error fetching notifications:', err.response?.data || err.message);
-      return [];
+        console.error('Error fetching notifications:', err);
+    } finally {
+        setIsFetchingNotifications(false);
     }
- };
+};
+
+
 
 
 
@@ -137,7 +163,7 @@ const fetchFollowedMosqueIds = async () => {
           await fetchUserProfile();
           await fetchUserFollowedMosques();
           await fetchFollowedMosqueIds();
-            await fetchNotifications();
+       
           // other data that need login can be fetched here
         }
         setAuthLoading(false);
@@ -163,7 +189,7 @@ const fetchFollowedMosqueIds = async () => {
         loggedInUser, setLoggedInUser, fetchUserData, profileLoading, setProfileLoading, userProfile, fetchUserProfile,  appLoading,
         authLoading, setAuthLoading, logOutError, setLogOutError, setUserProfile, followedMosques, setFollowedMosques, notifications, setNotifications, fetchNotifications, showProfileMenu,
          setShowProfileMenu, toastToCreateAccountMessage, setToastToCreateAccountMessage, mosques, setMosques, fetchMosques, hasMore, isFetching,
-          followMosqueIds, setFollowMosqueIds, fetchFollowedMosqueIds
+          followMosqueIds, setFollowMosqueIds, fetchFollowedMosqueIds, notificationsCount, setNotificationsCount, resetNotificationCount, hasMoreNotifications, isFetchingNotifications
  }}>
       {children}
     </UserContext.Provider>

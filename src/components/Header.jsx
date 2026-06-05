@@ -15,7 +15,7 @@ const Header = ({ onToggleSidebar }) => {
     const [selectedState, setSelectedState] = useState('');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
-    const [visibleNotificationsCount, setVisibleNotificationsCount] = useState(5);
+   
     const [notificationsCount, setNotificationsCount] = useState(0);
 
     const navigate = useNavigate();
@@ -24,7 +24,7 @@ const Header = ({ onToggleSidebar }) => {
 
     const { 
         loggedInUser, profileLoading, userProfile, authLoading, 
-        logOutError, showProfileMenu, setShowProfileMenu, fetchMosques, isFetching 
+        logOutError, showProfileMenu, setShowProfileMenu, fetchMosques, isFetching, fetchNotifications, resetNotificationCount
     } = useUserContext();
 
     const nigerianStates = ["Lagos", "Kano", "Kaduna", "Oyo", "Rivers", "FCT", "Borno", "Jigawa", "Plateau", "Enugu"];
@@ -42,6 +42,7 @@ const Header = ({ onToggleSidebar }) => {
 
     useEffect(() => {
         fetchUnreadNotificationsCount();
+    
     }, []);
 
   useEffect(() => {
@@ -93,22 +94,45 @@ const Header = ({ onToggleSidebar }) => {
                     </button>
 
                     <div className="relative">
-                        {loggedInUser && (
-                            <button onClick={() => setShowNotifications(!showNotifications)} className="relative p-2 rounded-full bg-white/20 hover:bg-white/30">
-                                <Bell className="w-6 h-6" />
-                                <span className={`absolute -top-1 -right-1 bg-red-500 text-[10px] font-bold px-1.5 rounded-full border-2 border-emerald-700 ${notificationsCount < 1 && 'hidden'}`}>
-                                    {notificationsCount > 99 ? '99+' : notificationsCount}
-                                </span>
-                            </button>
-                        )}
-                        {showNotifications && (
-                            <NotificationsDropdown 
-                                showNotifications={showNotifications} 
-                                setShowNotifications={setShowNotifications} 
-                                navigate={navigate} 
-                                location={location} 
-                            />
-                        )}
+                     
+
+{loggedInUser && (
+    <button 
+        onClick={async () => {
+            if (!showNotifications) {
+                // 1. Fetch first page and reset the local notification list
+                await fetchNotifications(1, 15, true); 
+                
+                resetNotificationCount(); // 2. Clear the badge count immediately
+                // 3. Open the dropdown
+                setShowNotifications(true);
+            } else {
+                setShowNotifications(false);
+            }
+        }} 
+        className="relative p-2 rounded-full bg-white/20 hover:bg-white/30"
+    >
+        <Bell className="w-6 h-6" />
+        
+        {/* Badge visibility logic */}
+        {notificationsCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-[10px] font-bold px-1.5 rounded-full border-2 border-emerald-700">
+                {notificationsCount > 99 ? '99+' : notificationsCount}
+            </span>
+        )}
+    </button>
+)}
+
+
+                     {showNotifications && (
+    <NotificationsDropdown 
+        showNotifications={showNotifications} 
+        setShowNotifications={setShowNotifications} 
+        navigate={navigate} 
+        location={location} 
+        currentMosqueId={currentMosqueId} // Add this prop
+    />
+)}
                     </div>
 
                     <div className='flex items-center'>
@@ -165,11 +189,3 @@ const Header = ({ onToggleSidebar }) => {
 
 export default Header;
 
-
-// setHasMore(newLectures.length >= 10);
-
-  // Association check
-    // if (!Lecture.associations.bookmarks) {
-    //   Lecture.hasMany(Bookmark, { foreignKey: 'lectureId', as: 'bookmarks', onDelete: 'CASCADE' });
-    //   Bookmark.belongsTo(Lecture, { foreignKey: 'lectureId', as: 'lecture' });
-    // }

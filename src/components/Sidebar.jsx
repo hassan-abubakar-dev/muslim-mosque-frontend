@@ -30,7 +30,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
             {/* Sidebar */}
             <aside
-                className={`fixed md:sticky top-4 left-0 w-64 bg-white border-r border-slate-200 z-40 transition-transform duration-300 md:translate-x-0 h-[calc(100vh-6rem)]  ${
+                className={`fixed top-24 left-0 w-64 bg-white border-r border-slate-200 z-40 transition-transform duration-300 md:translate-x-0 h-[calc(100vh-6rem)]  ${
                     isOpen ? 'translate-x-0' : '-translate-x-full'
                 }`}
             >
