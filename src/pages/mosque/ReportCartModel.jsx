@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AlertTriangle, FileText, X, CheckCircle2, ShieldAlert } from 'lucide-react';
+import privateAxiosInstance from '../../../auth/privateAxiosInstance';
 
 export default function ReportFormModal({ mosqueId, mosqueName, onClose, onSubmitSuccess }) {
   // Form State Layout
@@ -18,38 +19,38 @@ export default function ReportFormModal({ mosqueId, mosqueName, onClose, onSubmi
     { id: 'other', label: 'Other Reason (Write custom text below)' },
   ];
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!reasonCategory) return;
+// Replace your existing handleSubmit with this:
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!reasonCategory) return;
 
-    setIsSubmitting(true);
-    setSubmitError(null);
+  setIsSubmitting(true);
+  setSubmitError(null);
 
-    try {
-      // ⚡ Connects directly to your backend Sequelize layer
-      // const response = await fetch('/api/reports', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ mosqueId, reasonCategory, customReason })
-      // });
-      
-      // if (!response.ok) throw new Error('Failed to submit report');
-      
-      // Simulating database write success response
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      setIsSuccess(true);
-      setTimeout(() => {
-        if (onSubmitSuccess) onSubmitSuccess();
-        onClose();
-      }, 2000);
+  try {
+   
+    await privateAxiosInstance.post(`/reports/create/${mosqueId}`, {
+      reasonCategory,
+      customReason,
+      mosqueName
+    });
 
-    } catch (err) {
-      setSubmitError('Something went wrong. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    
+    setIsSuccess(true);
+    // Success timeout
+    setTimeout(() => {
+      if (onSubmitSuccess) onSubmitSuccess();
+      onClose();
+    }, 2000);
+
+  } catch (err) {
+    // Show the specific error message from the backend if it exists
+    setSubmitError(err.response?.data?.message || 'Failed to submit report. Please try again.');
+    console.error('Report submission error:', err);
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">

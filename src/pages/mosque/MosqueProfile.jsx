@@ -1,20 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { Camera, Globe, MapPin } from "lucide-react";
 import privateAxiosInstance from "../../../auth/privateAxiosInstance";
 import { useUserContext } from "../../context/UserContext";
  import { toggleMosqueFollow } from '../../util/follow.js';
+import MosqueProfileSkeleton from "../../components/loadingSkeletons/MosqueProfileSkeleton.jsx";
 
-const MosqueProfile = ({ mosque, followMosqueIds }) => {
+const MosqueProfile = ({ mosque }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
-const {loggedInUser} = useUserContext();
+const {loggedInUser, followMosqueIds} = useUserContext();
   // original image (fallback source)
   const [originalImage, setOriginalImage] = useState(mosque?.mosqueProfile?.image);
 
-  const isFollowing = followMosqueIds.includes(String(mosque?.id));
+  const isFollowing = followMosqueIds?.includes(String(mosque?.id));
 
+const [loadingProfile, setLoadingProfile] = useState(true);
+
+useEffect(() => {
+  if(mosque) {
+    setLoadingProfile(false);
+  }
+}, [mosque]);
 
 // Inside HomePage component
 const handleFollowMosque = async (e, mosque) => {
@@ -87,8 +95,15 @@ const handleFollowMosque = async (e, mosque) => {
     }
   };
 
+  if(loadingProfile){
+
+    return (
+      <MosqueProfileSkeleton />
+    )
+  }
+
   return (
-    <div className="bg-white rounded-xl shadow-md overflow-hidden w-full md:w-[87%] mx-auto mt-5">
+    <div className="bg-white rounded-xl shadow-md overflow-hidden w-full md:w-[87%] mx-auto ">
 
       {/* IMAGE SECTION */}
       <div className="relative h-[340px] w-full group bg-gray-200">

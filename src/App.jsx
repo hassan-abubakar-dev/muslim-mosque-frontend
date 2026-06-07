@@ -24,7 +24,6 @@ import AboutPage from './pages/About';
 import FollowingPage from './pages/FollowingPage';
 import BookmarkPage from './pages/Bookmark';
 import VideoLibrary from './pages/VideoLibrary';
-import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import MosqueTeamSettings from './pages/MosqueTeamSettings';
 import SuperAdminDashboard from './pages/superAdmin/SuperAdmin';
@@ -74,7 +73,6 @@ function App() {
             <Route path='/surah/:id' element={<Surah />} />
             <Route path='/about' element={<AboutPage />} />
             <Route path='/bookmarks' element={<BookmarkPage />} />
-            <Route path='/reports' element={<Reports />} />
             <Route path='/video-library' element={<VideoLibrary />} />
             <Route path='/settings' element={<Settings />} />
             <Route path='/mosque-team-settings/:mosqueId' element={<MosqueTeamSettings />} />

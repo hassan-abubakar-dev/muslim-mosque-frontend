@@ -16,7 +16,6 @@ const Header = ({ onToggleSidebar }) => {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
    
-    const [notificationsCount, setNotificationsCount] = useState(0);
 
     const navigate = useNavigate();
     const location = useLocation();
@@ -24,7 +23,7 @@ const Header = ({ onToggleSidebar }) => {
 
     const { 
         loggedInUser, profileLoading, userProfile, authLoading, 
-        logOutError, showProfileMenu, setShowProfileMenu, fetchMosques, isFetching, fetchNotifications, resetNotificationCount
+        logOutError, showProfileMenu, setShowProfileMenu, fetchMosques, isFetching, fetchNotifications, resetNotificationCount, notificationsCount, setNotificationsCount
     } = useUserContext();
 
     const nigerianStates = ["Lagos", "Kano", "Kaduna", "Oyo", "Rivers", "FCT", "Borno", "Jigawa", "Plateau", "Enugu"];

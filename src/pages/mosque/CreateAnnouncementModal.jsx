@@ -55,8 +55,18 @@ const CreateAnnouncementModal = ({ isOpen, onClose, mosqueFromState, onCreated }
   const handleSubmit = async () => {
     setError('');
 
-    if (!title.trim() || !content.trim()) {
+    if (!title.trim() && !content.trim()) {
       setError('Title and content are required.');
+      return;
+    }
+
+    if(!title.trim()){
+      setError('Title is required.');
+      return;
+    }
+
+    if(!content.trim()){
+      setError('Content is required.');
       return;
     }
 

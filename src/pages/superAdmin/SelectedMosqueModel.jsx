@@ -1,46 +1,74 @@
 import { X } from "lucide-react";
-import { useEffect } from "react";
 import privateAxiosInstance from "../../../auth/privateAxiosInstance";
 
+const SelectedMosqueModel = ({ selectedMosque, setSelectedMosque, setPendingMosques }) => {
 
-const SelectedMosqueModel = ({selectedMosque, setSelectedMosque, setPendingMosques, setTotalPendingMosqueCounts}) => {
-
-    const handleApproveMosque = async(id) => {
-     
-        try{
+    const handleApproveMosque = async (id) => {
+        try {
             const res = await privateAxiosInstance.put(`/mosques/verified-mosque/${id}`);
-            if(res.status < 400){
+            if (res.status < 400) {
                 setSelectedMosque(null);
-                setPendingMosques(prev => prev.filter(mosqueId => mosqueId.id === id));
-                
+                // Update parent state: remove the verified mosque from the queue
+                setPendingMosques(prev => prev.filter(m => m.id !== id));
             }
-
-        } catch(err){
-      console.error(err.response.data)
-    }
-    }
-
+        } catch (err) {
+            console.error("Verification failed", err.response?.data || err);
+        }
+    };
 
     return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-gray-100">
-            <div className="bg-slate-900 p-6 text-white relative">
-              <button onClick={() => setSelectedMosque(null)} className="absolute top-4 right-4 text-gray-400 hover:text-white rounded-full cursor-pointer"><X size={16} /></button>
-              <h3 className="text-xl font-black text-white">{selectedMosque.name}</h3>
-              <p className="text-xs text-gray-400 mt-1">{selectedMosque.localGovernment}, {selectedMosque.state}, {selectedMosque.country},</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-emerald-950/30 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden border border-emerald-100">
+                
+                {/* BRANDED HEADER: Replaced slate-900 with emerald-800 */}
+                <div className="bg-emerald-800 p-6 text-white relative">
+                    <button 
+                        onClick={() => setSelectedMosque(null)} 
+                        className="absolute top-4 right-4 text-emerald-200 hover:text-white transition-colors cursor-pointer"
+                    >
+                        <X size={20} />
+                    </button>
+                    <h3 className="text-xl font-black">{selectedMosque.name}</h3>
+                    <p className="text-xs text-emerald-100 mt-1 opacity-90">
+                        {selectedMosque.localGovernment}, {selectedMosque.state}, {selectedMosque.country}
+                    </p>
+                </div>
+
+                {/* CONTENT AREA */}
+                <div className="p-6 space-y-6 text-xs font-medium">
+                    <div className="bg-emerald-50/50 p-4 border border-emerald-100 rounded-xl">
+                        <p className="text-emerald-900 leading-relaxed text-sm font-medium">
+                            {selectedMosque.description}
+                        </p>
+                    </div>
+                    
+                    <div className="space-y-1">
+                        <p className="text-gray-400 uppercase font-bold tracking-wider text-[10px]">Applicant/Admin Identity</p>
+                        <p className="text-slate-800 font-bold text-sm">
+                            {selectedMosque?.mosquAdmin[0]?.user?.firstName} {selectedMosque?.mosquAdmin[0]?.user?.surName}
+                        </p>
+                        <p className="text-emerald-700 font-semibold">{selectedMosque?.mosquAdmin[0]?.user?.email}</p>
+                    </div>
+                </div>
+
+                {/* FOOTER ACTIONS */}
+                <div className="bg-gray-50 border-t border-gray-100 p-4 px-6 flex items-center justify-end gap-3">
+                    <button 
+                        onClick={() => setSelectedMosque(null)} 
+                        className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-xs font-bold cursor-pointer hover:bg-gray-100 transition-colors"
+                    >
+                        Cancel Audit
+                    </button>
+                    <button 
+                        onClick={() => handleApproveMosque(selectedMosque.id)} 
+                        className="px-4 py-2 bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm shadow-emerald-200 cursor-pointer hover:bg-emerald-800 transition-all"
+                    >
+                        Verify Mosque & Deploy
+                    </button>
+                </div>
             </div>
-            <div className="p-6 space-y-4 text-xs font-medium">
-              <p className="text-slate-700 leading-relaxed text-sm bg-gray-50 p-4 border rounded-xl font-sans font-medium">{selectedMosque.description}</p>
-              <p className="text-gray-500 font-bold"><span className="text-black">Applicant/admin Identity Node:</span> {selectedMosque?.mosquAdmin[0]?.user?.firstName}  {selectedMosque?.mosquAdmin[0]?.user?.surName} ( {selectedMosque?.mosquAdmin[0]?.user?.email})</p>
-            </div>
-            <div className="bg-gray-50 border-t p-4 px-6 flex items-center justify-end gap-3">
-              <button onClick={() => setSelectedMosque(null)} className="px-4 py-2 border text-gray-600 rounded-xl text-xs font-bold cursor-pointer">Cancel Audit</button>
-              <button onClick={() => handleApproveMosque(selectedMosque.id)} className="px-4 py-2 bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer hover:bg-emerald-800">Verify Mosque & Deploy Live</button>
-            </div>
-          </div>
         </div>
     );
 };
-
 
 export default SelectedMosqueModel;

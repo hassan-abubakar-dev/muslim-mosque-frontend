@@ -1,6 +1,6 @@
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
-import { Calendar } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
+import { Calendar, Loader2 } from 'lucide-react';
 import MosqueProfile from './MosqueProfile';
 import AnnouncementModal from './AnnouncementModal';
 import truncateByWords from '../../util/splitWord';
@@ -11,110 +11,119 @@ const AnnouncementsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const [appLoading, setApploading] = useState(true);
+  
   const [announcements, setAnnouncements] = useState([]);
-const [announcementsCount, setAnnouncementsCount] = useState(0);
-  // Mock data - replace with API call later
-  const [mosque, setMosque] = useState(location?.state?.mosqueFromState || []);
-
-  const fetchMosqueAnnouncements = async() => {
-    try{
-      const res = await privateAxiosInstance.get(`/announcements/get-announcements/${mosque.id}`);
-      if(res.status < 400){
-        console.log(res.data)
-        setAnnouncements(res.data.announcements);
-        setAnnouncementsCount(res.data.totalInDb);
-      }
-
-    }
-    catch(err){
-      console.log(err.response.data || err)
-    }
-  }
-
-  useEffect(() => {
-     fetchMosqueAnnouncements();
-    setApploading(false);
-  }, [mosque]);
-  
-  const mockAnnouncements = [
-    {
-      id: 1,
-      title: 'Ramadan Prayer Schedule',
-      description: 'Join us for special Ramadan prayers every evening. Full description here with more details about the schedule, timings, and what to expect.',
-      image: null,
-      createdAt: '2024-03-15'
-    },
-    {
-      id: 2,
-      title: 'Community Iftar',
-      description: 'Community Iftar event this Friday. Bring your family! We will have food, prayers, and community activities.',
-      image: 'https://example.com/image.jpg',
-      createdAt: '2024-03-10'
-    }
-  ];
-
+  const [loading, setLoading] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
-
-  const openAnnouncement = (announcement) => {
-    setSelectedAnnouncement(announcement);
-  };
-
-  const closeAnnouncement = () => {
-    setSelectedAnnouncement(null);
-  };
-
-  if(appLoading){
-    return <SplashScreen />
-  }else{
-
   
-  return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-20 mb-20">
-      <div className="max-w-6xl mx-auto">
-        {/* Mosque Card at Top */}
-        <MosqueProfile mosque={mosque} />
+  // Mosque state persists from navigation or could be fetched via ID
+  const [mosque] = useState(location?.state?.mosqueFromState || null);
+  const observerTarget = useRef(null);
 
-        {/* Announcements List */}
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString(undefined, { 
+      year: 'numeric', month: 'long', day: 'numeric' 
+    });
+  };
+
+  const fetchAnnouncements = async (pageNum, isInitial = false) => {
+    if (isInitial) setLoading(true);
+    else setIsFetchingMore(true);
+
+    try {
+      const res = await privateAxiosInstance.get(`/announcements/get-announcements/${mosque?.id || id}`, {
+        params: { page: pageNum, limit: 10 }
+      });
+
+      const { announcements: newData, totalItems } = res.data;
+      
+      setAnnouncements(prev => isInitial ? newData : [...prev, ...newData]);
+      setHasMore(announcements.length + newData.length < totalItems);
+   
+    } catch (err) {
+      console.error('Failed to fetch announcements', err);
+    } finally {
+      setLoading(false);
+      setIsFetchingMore(false);
+    }
+  };
+
+  // Initial Fetch
+  useEffect(() => {
+    if (mosque || id) fetchAnnouncements(1, true);
+  }, [mosque, id]);
+
+  // Infinite Scroll Observer
+// Infinite Scroll Observer
+useEffect(() => {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      // We check !isFetchingMore and hasMore here
+      if (entries[0].isIntersecting && hasMore && !isFetchingMore) {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchAnnouncements(nextPage);
+      }
+    },
+    { threshold: 0.1 } // Changed to 0.1 so it triggers before the user hits the very bottom
+  );
+
+  const currentTarget = observerTarget.current;
+  if (currentTarget) observer.observe(currentTarget);
+
+  return () => {
+    if (currentTarget) observer.unobserve(currentTarget);
+  };
+  // ADDED: 'announcements' to dependencies
+}, [hasMore, isFetchingMore, page, announcements]);
+
+  if (loading) return <SplashScreen />;
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-6 mt-20 mb-10">
+      <div className="max-w-4xl mx-auto">
+        {mosque && <MosqueProfile mosque={mosque} />}
+
         <div className="mt-6">
-          <h2 className="text-2xl font-semibold text-emerald-800 mb-4">Announcements ({announcementsCount})</h2>
+          <h2 className="text-2xl font-semibold text-emerald-800 mb-4">Announcements</h2>
           
           <div className="space-y-4">
-            { announcements.map((announcement) => (
+            {announcements.map((announcement) => (
               <div
                 key={announcement.id}
-                className="bg-white p-4 rounded-xl shadow-md hover:shadow-lg transition cursor-pointer"
-                onClick={() => openAnnouncement(announcement)}
+                className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition cursor-pointer"
+                onClick={() => setSelectedAnnouncement(announcement)}
               >
-                <h3 className="text-lg font-semibold text-emerald-700">{announcement.title} hhhhh</h3>
-                <p className="text-sm text-gray-600 mt-1">
-                  {/* Mobile: 12 words limit */}
-                  <span className="md:hidden">
-                    {truncateByWords(announcement.content, 6)}
-                  </span>
-                  {/* MD and above: 20 words limit */}
-                  <span className="hidden md:inline">
-                    {truncateByWords(announcement.content, 16)}
-                  </span>
+                <h3 className="text-lg font-bold text-gray-900">{announcement.title}</h3>
+                <p className="text-sm text-gray-600 mt-2">
+                  {truncateByWords(announcement.content, 16)}
                 </p>
-                <div className="flex items-center gap-2 mt-3">
-                  <Calendar size={16} className="text-emerald-600" />
-                  <p className="text-sm font-semibold text-emerald-700">{announcement.createdAt}</p>
+                <div className="flex items-center gap-2 mt-4 text-emerald-700">
+                  <Calendar size={16} />
+                  <span className="text-xs font-medium">{formatDate(announcement.createdAt)}</span>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Observer Target */}
+          <div ref={observerTarget} className="py-8 flex justify-center">
+            {isFetchingMore && <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />}
+          </div>
         </div>
 
-        {/* Announcement Detail Modal */}
         <AnnouncementModal 
           announcement={selectedAnnouncement}
           isOpen={!!selectedAnnouncement}
-          onClose={closeAnnouncement}
+          onClose={() => setSelectedAnnouncement(null)}
+          formatDate={formatDate}
         />
       </div>
     </div>
   );
-}};
+};
 
 export default AnnouncementsPage;
