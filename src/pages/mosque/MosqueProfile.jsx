@@ -7,6 +7,8 @@ import { useUserContext } from "../../context/UserContext";
 import MosqueProfileSkeleton from "../../components/loadingSkeletons/MosqueProfileSkeleton.jsx";
 import { uploadImageToCloudinary } from "../../util/cloudinary.js.js";
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 const MosqueProfile = ({ mosque }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -94,7 +96,9 @@ const handleFollowMosque = async (e, mosque) => {
       setPreview(null);
       setSelectedImage(null);
     } catch (err) {
-      console.error("Upload error:", err);
+      if (isDev) {
+        console.error("Upload error:", err);
+      }
     } finally {
       setUploading(false);
     }

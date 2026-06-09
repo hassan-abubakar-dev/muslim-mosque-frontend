@@ -50,7 +50,7 @@ function App() {
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         <div className="flex-1 md:pl-64">
           <Routes>
-            <Route path='/test' element={<SplashScreen />} />
+  
             <Route path='/' element={<Homepage />} />
             <Route path='/signup' element={<Signup />} />
             <Route path='/verify-email' element={<RegisterVerification />} />

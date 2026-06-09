@@ -16,7 +16,7 @@ export const ContextProvider = ({ children}) => {
     const [followedMosques, setFollowedMosques] = useState([]);
    
       const [showProfileMenu, setShowProfileMenu] = useState(false);
-      const [toastToCreateAccountMessage, setToastToCreateAccountMessage] = useState(null);
+     
       const [mosquePages, setMosquePages] = useState(1);
       const [followMosqueIds, setFollowMosqueIds] = useState([]);
 
@@ -100,7 +100,7 @@ const fetchNotifications = async (page = 1, limit = 15, reset = false) => {
         
         if (res.status < 400) {
             const { notifications: newNotifs, totalItems } = res.data;
-            console.log('notifications', newNotifs);
+           
             
           
             setNotifications(prev => reset ? newNotifs : [...prev, ...newNotifs]);
@@ -108,7 +108,9 @@ const fetchNotifications = async (page = 1, limit = 15, reset = false) => {
             setHasMoreNotifications(newNotifs.length === limit);
         }
     } catch (err) {
-        console.error('Error fetching notifications:', err);
+        if (isDev) {
+            console.error('Error fetching notifications:', err);
+        }
     } finally {
         setIsFetchingNotifications(false);
     }
@@ -127,7 +129,9 @@ const fetchMosques = async (page = 1, limit = 10, searchQuery = '', state = '', 
 
     if (res.status < 400) {
       const newMosques = res.data.mosques;
-      console.log('mosques', res.data);
+      if (isDev) {
+        // console.log('mosques', res.data);
+      }
       
       // Update data: replace if reset=true, else append
       setMosques(prev => reset ? newMosques : [...prev, ...newMosques]);
@@ -158,7 +162,9 @@ const fetchFollowedMosqueIds = async () => {
             setFollowMosqueIds(res.data.followedMosqueIds);
         }
     } catch (err) {
-        console.error("Failed to fetch followed IDs:", err);
+        if (isDev) {
+            console.error("Failed to fetch followed IDs:", err);
+        }
     }
 };
 
@@ -197,7 +203,7 @@ const fetchFollowedMosqueIds = async () => {
     <UserContext.Provider value={{ 
         loggedInUser, setLoggedInUser, fetchUserData, profileLoading, setProfileLoading, userProfile, fetchUserProfile,  appLoading,
         authLoading, setAuthLoading, logOutError, setLogOutError, setUserProfile, followedMosques, setFollowedMosques, notifications, setNotifications, fetchNotifications, showProfileMenu,
-         setShowProfileMenu, toastToCreateAccountMessage, setToastToCreateAccountMessage, mosques, setMosques, fetchMosques, hasMore, isFetching,
+         setShowProfileMenu, mosques, setMosques, fetchMosques, hasMore, isFetching,
           followMosqueIds, setFollowMosqueIds, fetchFollowedMosqueIds, notificationsCount, setNotificationsCount, resetNotificationCount, hasMoreNotifications,
            isFetchingNotifications, updateMosqueLocally
  }}>

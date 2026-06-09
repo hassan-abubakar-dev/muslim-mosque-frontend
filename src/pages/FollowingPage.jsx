@@ -14,7 +14,7 @@ const FollowingPage = () => {
 
   return (
     <div className="min-h-screen pb-20">
-      <main className="max-w-6xl mx-auto p-6 pt-8 mt-20">
+      <main className="max-w-6xl mx-auto p-6 pt-8 ">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <h2 className="text-2xl font-semibold">Following</h2>

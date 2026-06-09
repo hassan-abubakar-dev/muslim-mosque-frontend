@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import MasjibaLogoMark from '../assets/masjiba-logo-mark.png';
 import publicAxiosInstance from "../../auth/publicAxiosInstance";
+import PasswordInput from "../components/PasswordInput";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -117,29 +118,25 @@ const ResetPassword = () => {
           {/* NEW PASSWORD FIELD */}
           <label className="block">
             <span className="text-gray-700 text-sm">New Password *</span>
-            <input
-              type="password"
-              name="password"
-              required
-              value={form.password}
-              onChange={handleChange}
-              placeholder="Enter new password"
-              className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm"
-            />
+          <PasswordInput
+  name="password"
+  value={form.password}
+  onChange={handleChange}
+  placeholder="Enter new password"
+/>
           </label>
 
           {/* CONFIRM NEW PASSWORD FIELD */}
           <label className="block">
             <span className="text-gray-700 text-sm">Confirm New Password *</span>
-            <input
-              type="password"
-              name="confirmPassword"
-              required
-              value={form.confirmPassword}
-              onChange={handleChange}
-              placeholder="Confirm new password"
-              className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm"
-            />
+           
+           <PasswordInput
+    name="confirmPassword" 
+    value={form.confirmPassword} 
+    onChange={handleChange}
+    placeholder="Confirm new password"
+  />
+
           </label>
 
           {/* ACTION SUBMIT BUTTON */}

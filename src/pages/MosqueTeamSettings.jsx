@@ -85,7 +85,7 @@ export default function MosqueTeamSettings() {
   if (loadingRoster && team.length === 0 || !loggedInUser) return <MosqueTeamSkeleton />;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-20">
+    <div className="min-h-screen bg-gray-100 p-6 ">
       <div className="max-w-3xl mx-auto space-y-8 my-10 mb-20">
         
         {/* Dynamic Activity Feedback Banner */}
@@ -209,7 +209,6 @@ export default function MosqueTeamSettings() {
             <div className="divide-y divide-gray-100">
               {team.map((member) => {
                 const isPrimaryAdmin = member.role === 'owner';
-                console.log('Mapping team member:', member);
                 const userNode = member.user || {};
 
                 return (

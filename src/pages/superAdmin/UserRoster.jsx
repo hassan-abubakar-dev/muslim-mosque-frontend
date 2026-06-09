@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Search, User, Info, Loader2 } from 'lucide-react';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance';
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 const UserRoster = ({ users, fetchUsers, hasMore, currentPage,  updateUserRoleLocally}) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState(null); // For your future UserDetailModal
@@ -39,7 +41,9 @@ const handleToggleRole = async () => {
     } catch (err) {
       // 3. Error: Do NOT set setSelectedUser(null). 
       // This keeps the modal open so the user sees it didn't work.
-      console.error("Failed to update role:", err);
+      if (isDev) {
+        console.error("Failed to update role:", err);
+      }
       
       // Optional: You could set an 'errorMessage' state here to display 
       // inside the modal if you want to be user-friendly.

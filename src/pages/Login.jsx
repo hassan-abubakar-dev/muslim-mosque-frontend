@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../context/UserContext';
 import Toast from '../components/Toast';
 import MasjibaLogoMark from '../assets/masjiba-logo-mark.png';
+import PasswordInput from '../components/PasswordInput';
 
 const Login = () => {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -70,7 +71,7 @@ const Login = () => {
   };
 
  return (
-  <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6 md:mt-10">
+  <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
     <div className="w-full max-w-md bg-white/95 rounded-xl shadow-lg p-6">
       
       {/* HEADER & LOGO LOGICAL BRANDING BLOCK */}
@@ -120,7 +121,7 @@ const Login = () => {
           <div className="flex items-center justify-between">
             <span className="text-gray-700 text-sm">Password *</span>
             
-            {/* 🔗 FORGOT PASSWORD ROUTE MOCK LINK */}
+           
             <button 
               type="button"
               onClick={() => navigate('/forgot-password')}
@@ -129,15 +130,14 @@ const Login = () => {
               Forgot Password?
             </button>
           </div>
-          <input 
-            name="password" 
-            type="password" 
-            value={form.password} 
-            onChange={handleChange} 
-            required
-            className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300" 
-            placeholder="Enter your password" 
-          />
+       
+
+    <PasswordInput 
+    name="password" 
+    value={form.password} 
+    onChange={handleChange} 
+    placeholder="Enter your password" 
+  />
         </label>
 
         {/* ACTIONS & BUTTON CTAS */}

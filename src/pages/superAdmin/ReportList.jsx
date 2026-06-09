@@ -73,7 +73,7 @@ const handleResolve = async (id) => {
          setReports(prev => prev.filter(r => r.id !== id));
         setSelectedReport(null); // Close modal
         setIsInvestigating(false); 
-        console.log(res.data)
+       
        }
     } catch (err) {
         console.error("Failed to resolve:", err.response.data || err.message);

@@ -1,6 +1,8 @@
 
 import privateAxiosInstance from '../../auth/privateAxiosInstance.js';
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 const handleBookmarkClick = async (lectureId, lastPosition = 0) => { 
     const body = {
         lastPosition
@@ -8,9 +10,13 @@ const handleBookmarkClick = async (lectureId, lastPosition = 0) => {
   try {
     // Implementation for bookmarking lecture
     const res = await privateAxiosInstance.post(`/bookmarks/toggle/${lectureId}`, body);
-    console.log('Bookmark response:', res.data);
+    if (isDev) {
+      console.log('Bookmark response:', res.data);
+    }
   } catch(err){
-    console.error(err.response?.data || err.message);
+    if (isDev) {
+      console.error(err.response?.data || err.message);
+    }
   }
 };
 

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { AlertTriangle, FileText, X, CheckCircle2, ShieldAlert } from 'lucide-react';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance';
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 export default function ReportFormModal({ mosqueId, mosqueName, onClose, onSubmitSuccess }) {
   // Form State Layout
   const [reasonCategory, setReasonCategory] = useState('');
@@ -46,7 +48,9 @@ const handleSubmit = async (e) => {
   } catch (err) {
     // Show the specific error message from the backend if it exists
     setSubmitError(err.response?.data?.message || 'Failed to submit report. Please try again.');
-    console.error('Report submission error:', err);
+    if (isDev) {
+      console.error('Report submission error:', err);
+    }
   } finally {
     setIsSubmitting(false);
   }

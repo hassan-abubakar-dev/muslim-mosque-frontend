@@ -61,7 +61,9 @@ const VideoLibrary = () => {
         setHasMore(newItems.length > 0); 
       }
     } catch (err) {
-      console.error("Failed fetching library:", err);
+      if (isDev) {
+        console.error("Failed fetching library:", err);
+      }
     } finally {
       setIsLoading(false);
       setLoadingSkeleton(false);
@@ -109,7 +111,9 @@ useEffect(() => {
         setVideoToRemove(null);
       }
     } catch (err) {
-      console.error("Failed removing target video item:", err);
+      if (isDev) {
+        console.error("Failed removing target video item:", err);
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -118,7 +122,7 @@ useEffect(() => {
 
 
 return (
-    <div className="min-h-screen bg-gray-50 pt-28 pb-12 px-4 sm:px-6 md:px-8">
+    <div className="min-h-screen bg-gray-50 pt-6 pb-12 px-4 sm:px-6 md:px-8">
       <div className="max-w-7xl mx-auto">
         {/* 🌟 1. Navigation & Content Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">

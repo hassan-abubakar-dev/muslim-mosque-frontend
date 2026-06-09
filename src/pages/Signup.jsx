@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import publicAxiosInstance from '../../auth/publicAxiosInstance';
 import { useNavigate } from 'react-router-dom';
 import MasjibaLogoMark from '../assets/masjiba-logo-mark.png';
+import PasswordInput from '../components/PasswordInput';
 
 const Signup = () => {
   const [form, setForm] = useState({ firstName: '', surname: '', email: '', password: '', gender: '' });
@@ -57,7 +58,7 @@ const Signup = () => {
 
  return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-6">
-      <div className="w-full max-w-md bg-white/95 rounded-xl shadow-lg p-6 mt-20">
+      <div className="w-full max-w-md bg-white/95 rounded-xl shadow-lg p-6 ">
         
         {/* BRANDING LOGO SECTION */}
         <div className="flex flex-col items-center text-center mb-5">
@@ -93,7 +94,12 @@ const Signup = () => {
 
           <label className="block">
             <span className="text-gray-700 text-sm">Password</span>
-            <input name="password" type="password" value={form.password} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm" placeholder="Enter a strong password" />
+            <PasswordInput
+    name="password" 
+    value={form.password} 
+    onChange={handleChange} 
+    placeholder="Enter a strong password" 
+  />
           </label>
 
           <label className="block">

@@ -53,7 +53,7 @@ const canDeleteAnnouncement = isSuperAdmin || isOwner;
       const res = await privateAxiosInstance.delete(`/announcements/delete-announcement/${announcementId}`);
 
       if (res.status < 400) {
-        console.log(res.data)
+    
         setAnnouncements((prev) => prev.filter((item) => String(item.id) !== String(announcementId)));
         if (selectedAnnouncement?.id === announcementId) {
           setSelectedAnnouncement(null);
@@ -63,7 +63,9 @@ const canDeleteAnnouncement = isSuperAdmin || isOwner;
         throw new Error('Failed to delete announcement.');
       }
     } catch (err) {
-      console.error('Announcement delete failed:', err);
+      if (isDev) {
+        console.error('Announcement delete failed:', err);
+      }
       setDeleteError(err.response?.data?.message || err.message || 'Failed to delete announcement.');
     } finally {
       setIsDeleting(false);
@@ -85,7 +87,9 @@ const canDeleteAnnouncement = isSuperAdmin || isOwner;
       setHasMore(announcements.length + newData.length < totalItems);
    
     } catch (err) {
-      console.error('Failed to fetch announcements', err);
+      if (isDev) {
+        console.error('Failed to fetch announcements', err);
+      }
     } finally {
       setLoading(false);
       setIsFetchingMore(false);
@@ -124,7 +128,7 @@ useEffect(() => {
   if (loading) return <><MosqueProfileSkeleton /><AnnouncementSkeleton /> </>;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-20 mb-10">
+    <div className="min-h-screen bg-gray-100 p-6  mb-10">
       <div className="max-w-4xl mx-auto">
         {mosque && <MosqueProfile mosque={mosque} />}
 

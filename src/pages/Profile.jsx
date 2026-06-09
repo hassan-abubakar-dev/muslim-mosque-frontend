@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Camera, Save, CheckCircle, Users, Shield } from 'lucide-react'; // Swapped HelpCircle for structural team icons
+import { Camera, Save, CheckCircle, Users, Shield, X } from 'lucide-react'; // Swapped HelpCircle for structural team icons
 import { useUserContext } from '../context/UserContext';
 import privateAxiosInstance from '../../auth/privateAxiosInstance';
 import { useNavigate } from 'react-router-dom';
 import ProfileSkeleton from '../components/loadingSkeletons/ProfileSkeletonLoader';
 import { uploadImageToCloudinary } from '../util/cloudinary.js';
+
+const isDev = import.meta.env.VITE_ENV === 'development';
 
 const Profile = () => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -25,6 +27,14 @@ const Profile = () => {
       setPreviewUrl(URL.createObjectURL(file)); // Show preview immediately
     }
   };
+
+  const handleCancel = () => {
+  setSelectedFile(null);
+  setPreviewUrl(null);
+  if (fileInputRef.current) {
+    fileInputRef.current.value = ""; // Clear the hidden input
+  }
+};
 
   // Handle API Upload
  const handleUpload = async () => {
@@ -50,7 +60,9 @@ const Profile = () => {
     }
     
   } catch (err) {
-    console.error('Upload error:', err.response?.data || err.message);
+    if (isDev) {
+      console.error('Upload error:', err.response?.data || err.message);
+    }
     setError('Failed to update profile. Please try again.');
   } finally {
     setUploading(false); // ALWAYS runs, regardless of success or failure
@@ -62,9 +74,10 @@ const Profile = () => {
 
 if(!loggedInUser){
   return <ProfileSkeleton />
-}else{
-    return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-20">
+}
+    
+return (
+    <div className="min-h-screen bg-gray-100">
       <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-8 my-10 mb-20">
         
         {/* Error Message Box */}
@@ -116,16 +129,29 @@ if(!loggedInUser){
           <p className="text-gray-500 font-medium">{loggedInUser?.email}</p>
           
           {/* Save Button - Only shows when a new image is selected */}
-          {selectedFile && (
-            <button 
-              onClick={handleUpload}
-              disabled={uploading}
-              className="mt-4 flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all shadow-md animate-bounce cursor-pointer"
-            >
-              <Save size={18} />
-              {uploading ? 'Uploading...' : 'Save New Photo'}
-            </button>
-          )}
+   {selectedFile && (
+  <div className="mt-6 flex gap-3 animate-in fade-in zoom-in duration-300">
+    
+    {/* Cancel Button */}
+    <button 
+      onClick={handleCancel}
+      className="flex items-center gap-2 px-6 py-2 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-all font-semibold"
+    >
+      <X ize={18} />
+      
+    </button>
+
+    {/* Save Button (with bounce) */}
+    <button 
+      onClick={handleUpload}
+      disabled={uploading}
+      className="flex items-center gap-2 px-6 py-2 bg-emerald-700 text-white rounded-full hover:bg-emerald-800 transition-all shadow-md animate-bounce cursor-pointer"
+    >
+      <Save size={18} />
+      {uploading ? 'Uploading...' : 'Save New Photo'}
+    </button>
+  </div>
+)}
         </div>
 
         {/* Info Grid */}
@@ -195,7 +221,7 @@ if(!loggedInUser){
       </div>
     </div>
   );
-}
+
 };
 
 export default Profile;

@@ -139,7 +139,6 @@ const CategoryLecture = () => {
 
       if (res.status < 400) {
         const { lectures: newLectures, totalPages, currentPage } = res.data;
-        console.log(res.data)
 
         setLectures(prev => isReset ? newLectures : [...prev, ...newLectures]);
 
@@ -272,7 +271,16 @@ if (loadingSkeleton) {
   teacherName={cat?.teacherName}
   formatDuration={formatDuration}
   onPlay={handlePlayLecture}
-  onUpdateState={() => fetchLectures(1, true)}
+  onUpdateState={(newIsBookmarked) => {
+    setLectures(prev => prev.map(l => 
+      l.id === lecture.id 
+        ? { 
+            ...l, 
+            bookmarks: newIsBookmarked ? [{ id: 'dummy' }] : [] // Update local array to match UI
+          } 
+        : l
+    ));
+  }}
   onDeleteRequest={setLectureToDelete}
   // Add this new prop:
   onDownload={(lec) => {

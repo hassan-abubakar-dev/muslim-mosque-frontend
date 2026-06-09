@@ -1,3 +1,5 @@
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 export const uploadImageToCloudinary = async (file) => {
   const formData = new FormData();
   formData.append("file", file);
@@ -21,7 +23,9 @@ export const uploadImageToCloudinary = async (file) => {
 
     return { imageUrl: data.secure_url, publicId: data.public_id };
   } catch (error) {
-    console.error("Cloudinary Utility Error:", error); // Logs actual error
+    if (isDev) {
+      console.error("Cloudinary Utility Error:", error); // Logs actual error
+    }
     throw error; // Rethrows to be caught by handleSubmit
   }
 };

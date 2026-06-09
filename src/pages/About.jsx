@@ -3,6 +3,8 @@ import { UserContext } from "../context/UserContext";
 import { Info, CheckCircle, Mail, ChevronDown, Facebook, Twitter, Github, Globe } from "lucide-react";
 import privateAxiosInstance from "../../auth/privateAxiosInstance";
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 const AboutPage = () => {
   const { loggedInUser } = useContext(UserContext);
   
@@ -33,12 +35,14 @@ const handleSubmit = async (e) => {
       if(res.status < 400){
         setIsSuccess(true);
       setFormData((prev) => ({ ...prev, message: "", contactConsent: false }));
-      console.log(res.data)
+     
       setTimeout(() => setIsSuccess(false), 3000);
       
       }
     } catch (error) {
-      console.error("Feedback submission error:", error);
+      if (isDev) {
+        console.error("Feedback submission error:", error);
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -5,13 +5,19 @@ import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../context/UserContext.jsx';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance.js';
 import DeleteUserModal from './DeleteUserModal.jsx';
+import PasswordInput from '../../components/PasswordInput.jsx';
+import SettingsSkeleton from '../../components/loadingSkeletons/SettingsSkeleton.jsx';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { loggedInUser, userProfile } = useUserContext();
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' or 'security'
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  
+
+  const isDev = import.meta.env.VITE_ENV === 'development';
+
+  const [isLoading, setIsLoading] = useState(true);
+
   // Profile form submission state tracker
   const [profileForm, setProfileForm] = useState({
     firstName: loggedInUser?.firstName || '',
@@ -19,6 +25,10 @@ const Settings = () => {
     email: loggedInUser?.email || '',
     gender: loggedInUser?.gender || '',
   });
+
+  useEffect(() => {
+  if (loggedInUser) setIsLoading(false);
+}, [loggedInUser]);
 
   // Keep state perfectly updated if context asynchronously initializes late
   useEffect(() => {
@@ -58,7 +68,7 @@ const Settings = () => {
         console.log('Profile updated successfully:', res.data);
       }
     } catch (err) {
-        console.error('Profile update error:', err.response?.data || err.message);
+      console.error('Profile update error:', err.response?.data || err.message);
       setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to update profile.' });
     } finally {
       setIsSaving(false);
@@ -71,7 +81,7 @@ const Settings = () => {
     if (securityForm.newPassword !== securityForm.confirmPassword) {
       return setMessage({ type: 'error', text: 'New passwords do not match!' });
     }
-    
+
     setIsSaving(true);
     setMessage({ type: '', text: '' });
     try {
@@ -79,24 +89,28 @@ const Settings = () => {
         currentPassword: securityForm.currentPassword,
         newPassword: securityForm.newPassword
       });
-      
+
       if (res.data?.status === 'success' || res.status < 400) {
         console.log('Password changed successfully:', res.data);
         setMessage({ type: 'success', text: 'Your password has been securely reset!' });
         setSecurityForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); // Clear fields
       }
     } catch (err) {
-        console.error('Password change error:', err.response?.data || err.message);
+      console.error('Password change error:', err.response?.data || err.message);
       setMessage({ type: 'error', text: err.response?.data?.message || 'Credentials update rejected.' });
     } finally {
       setIsSaving(false);
     }
   };
 
+  if (isLoading) {
+  return <SettingsSkeleton />;
+}
+
   return (
     <div className="min-h-screen bg-gray-50 pt-28 pb-12 px-4 sm:px-6 md:px-8">
       <div className="max-w-3xl mx-auto">
-        
+
         {/* Hub Page Title Row */}
         <div className="mb-6">
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">Account Settings</h1>
@@ -108,24 +122,22 @@ const Settings = () => {
           <button
             type="button"
             onClick={() => { setActiveTab('profile'); setMessage({ type: '', text: '' }); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-              activeTab === 'profile'
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${activeTab === 'profile'
                 ? 'bg-white text-emerald-950 shadow-xs border border-gray-100'
                 : 'text-gray-500 hover:text-gray-800'
-            }`}
+              }`}
           >
             <User className="w-4 h-4" />
             Profile Details
           </button>
-          
+
           <button
             type="button"
             onClick={() => { setActiveTab('security'); setMessage({ type: '', text: '' }); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
-              activeTab === 'security'
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${activeTab === 'security'
                 ? 'bg-white text-emerald-950 shadow-xs border border-gray-100'
                 : 'text-gray-500 hover:text-gray-800'
-            }`}
+              }`}
           >
             <ShieldCheck className="w-4 h-4" />
             Security & Password
@@ -134,22 +146,21 @@ const Settings = () => {
 
         {/* Status Toast Message Block */}
         {message.text && (
-          <div className={`mb-6 p-4 rounded-xl text-xs font-semibold border ${
-            message.type === 'success' 
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
+          <div className={`mb-6 p-4 rounded-xl text-xs font-semibold border ${message.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
               : 'bg-red-50 border-red-200 text-red-900'
-          }`}>
+            }`}>
             {message.text}
           </div>
         )}
 
         {/* 🌟 2. Central Settings Content Container Sheet */}
         <div className="bg-white rounded-[3rem] border border-gray-100 shadow-xs p-6 sm:p-10">
-          
+
           {/* 🪪 PANEL A: PROFILE DETAILS INTERFACE */}
           {activeTab === 'profile' && (
             <form onSubmit={handleUpdateProfile} className="space-y-6">
-              
+
               {/* Dynamic Photo Redirect Interaction Circle */}
               <div className="flex flex-col items-center sm:flex-row gap-5 border-b border-gray-50 pb-6">
                 <button
@@ -178,7 +189,7 @@ const Settings = () => {
 
               {/* Identity Form Slots Layout Grid */}
               <div className="grid grid-cols-1 gap-5">
-                
+
                 {/* Responsive Dual Column Name Grid Structure */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* First Name Input Slot */}
@@ -236,11 +247,11 @@ const Settings = () => {
                       <option value="male">Male</option>
                       <option value="female">Female</option>
                     </select>
-                    
+
                     {/* Custom Down Chevron Icon Overlay Component */}
                     <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
                       <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
                       </svg>
                     </div>
                   </div>
@@ -278,12 +289,10 @@ const Settings = () => {
               <div className="space-y-4">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wider pl-1">Current Account Password</label>
-                  <input
-                    type="password"
-                    required
+                  <PasswordInput
+                    name="currentPassword"
                     value={securityForm.currentPassword}
                     onChange={(e) => setSecurityForm({ ...securityForm, currentPassword: e.target.value })}
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 outline-hidden text-sm text-gray-800 focus:border-emerald-700 focus:bg-white transition"
                     placeholder="••••••••"
                   />
                 </div>
@@ -292,24 +301,20 @@ const Settings = () => {
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wider pl-1">New Target Password</label>
-                  <input
-                    type="password"
-                    required
+                  <PasswordInput
+                    name="newPassword"
                     value={securityForm.newPassword}
                     onChange={(e) => setSecurityForm({ ...securityForm, newPassword: e.target.value })}
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 outline-hidden text-sm text-gray-800 focus:border-emerald-700 focus:bg-white transition"
                     placeholder="••••••••"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-bold text-gray-700 uppercase tracking-wider pl-1">Confirm New Password</label>
-                  <input
-                    type="password"
-                    required
+                  <PasswordInput
+                    name="confirmPassword"
                     value={securityForm.confirmPassword}
                     onChange={(e) => setSecurityForm({ ...securityForm, confirmPassword: e.target.value })}
-                    className="h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 outline-hidden text-sm text-gray-800 focus:border-emerald-700 focus:bg-white transition"
                     placeholder="••••••••"
                   />
                 </div>
@@ -329,27 +334,27 @@ const Settings = () => {
 
 
               <div className="mt-10 pt-6 border-t-2 border-red-100 mb-6">
-           <h4 className="text-sm font-bold text-red-600 mb-2">Danger Zone</h4>
-           <p className="text-xs text-gray-500 mb-4">Deleting your account is permanent. All your data will be wiped.</p>
-           <button 
-             type="button"
-             onClick={() => setIsDeleteModalOpen(true)}
-             className="text-xs font-bold text-red-600 bg-red-50 px-4 py-4 rounded-lg hover:bg-red-100"
-           >
-             Delete My Account
-           </button>
-        </div>
+                <h4 className="text-sm font-bold text-red-600 mb-2">Danger Zone</h4>
+                <p className="text-xs text-gray-500 mb-4">Deleting your account is permanent. All your data will be wiped.</p>
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(true)}
+                  className="text-xs font-bold text-red-600 bg-red-50 px-4 py-4 rounded-lg hover:bg-red-100"
+                >
+                  Delete My Account
+                </button>
+              </div>
             </form>
           )}
 
         </div>
       </div>
 
-      <DeleteUserModal 
-      isOpen={isDeleteModalOpen} 
-      onClose={() => setIsDeleteModalOpen(false)} 
-      userEmail={loggedInUser?.email} 
-    />
+      <DeleteUserModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        userEmail={loggedInUser?.email}
+      />
     </div>
   );
 };

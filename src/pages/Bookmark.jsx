@@ -58,7 +58,6 @@ const BookmarkPage = () => {
 
       if (res.status < 400) {
         const newBookmarks = res.data.data.bookmarks;
-        console.log(`Fetched bookmarks (Page ${pageNum}):`, newBookmarks);
         const { totalPages, currentPage } = res.data;
 
         setBookmarks(prev => isReset ? newBookmarks : [...prev, ...newBookmarks]);
@@ -108,7 +107,7 @@ const BookmarkPage = () => {
 
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-20">
+    <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto mb-6">
         <h1 className="text-2xl font-bold text-gray-800">Saved Bookmarks</h1>
       </div>

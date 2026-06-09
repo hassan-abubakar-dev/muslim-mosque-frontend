@@ -6,17 +6,22 @@ import { UserContext } from '../context/UserContext';
 import { toggleMosqueFollow } from '../util/follow.js';
 import MosqueCard from '../components/MosqueCard';
 import MosqueListSkeleton from '../components/loadingSkeletons/MosqueListSkeleton';
+import ToastToCreateAccount from '../components/ToastToCreateAccount.jsx';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const observerTarget = useRef(null);
   const [page, setPage] = useState(1);
+
+   const isDev = import.meta.env.VITE_ENV === 'development';
   
   const { loggedInUser, fetchMosques, mosques, hasMore, isFetching, followMosqueIds, setFollowMosqueIds, fetchFollowedMosqueIds  } = useContext(UserContext);
 
   const openMosque = (mosque) => {
     navigate(`/mosque/${mosque.id}`, { state: { mosque } });
   };
+
+  const [toastMessage, setToastMessage] = useState(null);
 
 const handleFollowMosque = async (e, mosque) => {
   e.stopPropagation();
@@ -42,7 +47,9 @@ const handleFollowMosque = async (e, mosque) => {
     }
   } else {
     // Show error toast if API fails
-    console.error("Failed to update follow status");
+    if (isDev) {
+      console.error("Failed to update follow status");
+    }
   }
 };
 
@@ -68,12 +75,26 @@ const handleFollowMosque = async (e, mosque) => {
     return () => observer.disconnect();
   }, [hasMore, isFetching]);
 
+  // Determine the title based on what the user is looking at
+const getPageTitle = () => {
+  if (isFetching && mosques.length === 0) return ""; // Show nothing while loading the first time
+  if (mosques.length === 0) return "No Mosques Found";
+  return "Explore Mosques"; // Use this instead of "Featured Mosques"
+};
+
   return (
     <div className="min-h-screen pb-20">
-      <main className="max-w-6xl mx-auto p-6 pt-8 mt-20">
-        <h2 className="text-2xl font-semibold mb-4">
-          {mosques.length > 0 ? "Featured Mosques" : ""}
-        </h2>
+
+      {toastMessage && (
+  <ToastToCreateAccount
+    message={toastMessage}
+    setMessage={setToastMessage}
+  />
+)}
+      <main className="max-w-6xl mx-auto p-6 pt-8 ">
+       <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+  {getPageTitle()}
+</h2>
 
         {/* CONDITION: Show Skeleton ONLY if we have no mosques yet and we are still fetching the first page */}
         {mosques.length === 0 && isFetching ? (
@@ -93,6 +114,7 @@ const handleFollowMosque = async (e, mosque) => {
                 loggedInUser={loggedInUser}
                 followMosqueIds={followMosqueIds} 
                 setFollowMosqueIds={setFollowMosqueIds}
+                setToastMessage={setToastMessage}
               />
             ))}
           </div>
@@ -109,6 +131,8 @@ const handleFollowMosque = async (e, mosque) => {
           )}
         </div>
       </main>
+
+      
     </div>
   );
 };

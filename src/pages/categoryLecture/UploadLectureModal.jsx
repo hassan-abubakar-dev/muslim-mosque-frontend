@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance';
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLectures }) => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('audio');
@@ -11,7 +13,9 @@ const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLec
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  console.log('mosqueid', cat.mosqueId);
+  if (isDev) {
+    console.log('mosqueid', cat.mosqueId);
+  }
 
   useEffect(() => {
     setError('');

@@ -15,11 +15,13 @@ const LectureCard = ({
     const isBookmarked = mode === "bookmark" ? true : (lecture.bookmarks && lecture.bookmarks.length > 0);
 
 
-
-   const handleBookmarkClick = async () => {
+const handleBookmarkClick = async () => {
+    // Optimistically toggle or wait for the result
+    const wasBookmarked = isBookmarked;
     await lectureUtils.toggleBookmark(lecture.id);
-    // Simple call, no logic needed about re-fetching here
-    onUpdateState();
+    
+    // Notify parent of the change and the new status
+    onUpdateState(!wasBookmarked); 
 };
 
     return (

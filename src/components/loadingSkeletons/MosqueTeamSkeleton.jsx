@@ -1,6 +1,6 @@
 const MosqueTeamSkeleton = () => {
   return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-20">
+    <div className="min-h-screen bg-gray-100 p-6 ">
       <div className="max-w-3xl mx-auto space-y-8 my-10 mb-20 animate-pulse">
         {/* Skeleton for Appoint Assistant Card */}
         <div className="bg-white rounded-xl shadow-md p-8">

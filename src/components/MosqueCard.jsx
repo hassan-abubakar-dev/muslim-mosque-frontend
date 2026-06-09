@@ -1,7 +1,7 @@
 import { MapPin } from 'lucide-react';
 import truncateByWords from '../util/splitWord';
 
-const MosqueCard = ({ mosque, openMosque, handleFollowMosque, loggedInUser, followMosqueIds }) => {
+const MosqueCard = ({ mosque, openMosque, handleFollowMosque, loggedInUser, followMosqueIds, setToastMessage }) => {
   const isFollowing = followMosqueIds?.includes(String(mosque.id));
 
   const showPending = mosque.status === 'pending' || mosque.status === 'suspended';
@@ -34,16 +34,15 @@ const MosqueCard = ({ mosque, openMosque, handleFollowMosque, loggedInUser, foll
           >
             {truncateByWords(mosque.name, 3)}
           </h3>
-         <span 
-    className={`text-xs px-2 py-1 rounded-full whitespace-nowrap shrink-0 font-medium ${
-      showPending 
-        ? 'bg-amber-100 text-amber-700' 
-        : 'bg-emerald-100 text-emerald-700'
-    }`}
-    title={`Status: ${mosque.status}`}
-  >
-    {showPending ? 'Under Review' : 'Verified'}
-  </span>
+          <span
+            className={`text-xs px-2 py-1 rounded-full whitespace-nowrap shrink-0 font-medium ${showPending
+                ? 'bg-amber-100 text-amber-700'
+                : 'bg-emerald-100 text-emerald-700'
+              }`}
+            title={`Status: ${mosque.status}`}
+          >
+            {showPending ? 'Under Review' : 'Verified'}
+          </span>
         </div>
 
         {/* Location Area */}
@@ -62,7 +61,7 @@ const MosqueCard = ({ mosque, openMosque, handleFollowMosque, loggedInUser, foll
         {/* Footer Section */}
         <div className="mt-auto pt-6 flex items-center justify-between gap-4">
           <div className="text-sm text-gray-600 font-medium">
-            {mosque.followersCount || 0} 
+            {mosque.followersCount || 0}
             <span className="text-gray-400 ml-1 font-normal">
               {mosque.followersCount === 1 ? 'follower' : 'followers'}
             </span>
@@ -82,7 +81,15 @@ const MosqueCard = ({ mosque, openMosque, handleFollowMosque, loggedInUser, foll
                 )}
                 {(!loggedInUser || !isFollowing) && (
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleFollowMosque(e, mosque); }}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Always stop the card click
+
+                      if (!loggedInUser) {
+                        setToastMessage("Please log in to follow this mosque.");
+                      } else {
+                        handleFollowMosque(e, mosque);
+                      }
+                    }}
                     className="px-5 py-1.5 rounded-md text-sm font-semibold bg-emerald-700 text-white hover:bg-emerald-800 transition shadow-sm"
                   >
                     Follow

@@ -19,7 +19,7 @@ import SuspendMosqueModal from './SuspendMosqueModal.jsx';
 const Mosque = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { loggedInUser, toastToCreateAccountMessage, setToastToCreateAccountMessage, followMosqueIds, 
+  const { loggedInUser, followMosqueIds, 
   setFollowMosqueIds, mosques } = useContext(UserContext);
 
   const [showModal, setShowModal] = useState(false);
@@ -34,13 +34,40 @@ const Mosque = () => {
   const [newCategory, setNewCategory] = useState({ name: 'Quran', information: '', teacherName: '' });
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+
+  const [isFetching, setIsFetching] = useState(false);
+  const [fetchedMosque, setFetchedMosque] = useState(null);
 
   const isDev = import.meta.env.VITE_ENV === 'development';
 
- const activeMosque = useMemo(() => {
-  return mosques.find((m) => String(m.id) === String(id)) || null;
-}, [mosques, id]);
+const activeMosque = useMemo(() => {
+  return mosques.find((m) => String(m.id) === String(id)) || fetchedMosque;
+}, [mosques, id, fetchedMosque]);
 
+useEffect(() => {
+  let isMounted = true; // 1. Flag to track mounting
+  const mosqueInContext = mosques.find((m) => String(m.id) === String(id));
+  
+  if (!mosqueInContext && !fetchedMosque && id) {
+    const fetchMosqueData = async () => {
+      setIsFetching(true);
+      try {
+        const res = await privateAxiosInstance.get(`/mosques/get-mosque/${id}`);
+        if (isMounted) { // 2. Check if component is still there before updating
+          setFetchedMosque(res.data.mosque);
+        }
+      } catch (err) {
+        if (isMounted) console.error("Failed to fetch mosque:", err);
+      } finally {
+        if (isMounted) setIsFetching(false);
+      }
+    };
+    fetchMosqueData();
+  }
+  
+  return () => { isMounted = false; }; // 3. Cleanup
+}, [id, mosques, fetchedMosque]);
  
 const isSuperAdmin = loggedInUser?.role === 'superAdmin';
 
@@ -50,13 +77,16 @@ const isOwner = loggedInUser?.managedMosques?.some(
 
 // This variable will determine if the user can perform "Admin" actions
 const canManage = isOwner || isSuperAdmin;
-  const handleProtectedAction = (actionCallback) => {
-    if (!loggedInUser) {
-      setToastToCreateAccountMessage("Please log in to perform this action.");
-      return;
-    }
-    actionCallback();
-  };
+
+
+const handleProtectedAction = (actionCallback, actionName) => {
+  if (!loggedInUser) {
+    // Now it uses the actionName provided
+    setToastMessage(`Please log in to ${actionName} this mosque.`);
+    return;
+  }
+  actionCallback();
+};
 
   // Updated: Now using the imported utility
  const isFollowing = followMosqueIds.includes(String(activeMosque?.id));
@@ -98,17 +128,18 @@ const canManage = isOwner || isSuperAdmin;
     fetchAllCategories(activeMosque.id);
   }, [activeMosque]);
 
-  if (!activeMosque) return <MosqueLoadingSkeleton />;
+ if (isFetching) return <MosqueLoadingSkeleton />;
+if (!activeMosque) return <div className="p-20 text-center">Mosque not found.</div>;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-20">
+    <div className="min-h-screen bg-gray-100 p-6">
       {Error && <Toast />}
 
       {/* Login Toast Notification */}
-      {toastToCreateAccountMessage && (
+      {toastMessage && (
        <ToastToCreateAccount
-         toastToCreateAccountMessage={toastToCreateAccountMessage}
-         setToastToCreateAccountMessage={setToastToCreateAccountMessage}
+         message={toastMessage}
+         setMessage={setToastMessage}
         />
       )}
 
@@ -143,21 +174,29 @@ const canManage = isOwner || isSuperAdmin;
       <div className="max-w-6xl mx-auto flex items-center justify-between mb-6">
         <div className="flex gap-3">
           {!isOwner && (
-            <button onClick={() => handleProtectedAction(() => setOpenReportModel(true))} className="bg-rose-50 text-rose-700 border border-rose-200 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-rose-100 flex items-center gap-2">
+            <button 
+            onClick={() => handleProtectedAction(() => setOpenReportModel(true), "report")}
+             className="bg-rose-50 text-rose-700 border border-rose-200 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-rose-100 flex items-center gap-2">
               <Flag size={15} /> Report
             </button>
           )}
-          {!isOwner && (
-            isFollowing? (
-              <button onClick={() => setShowUnfollowConfirm(true)} className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-300 flex items-center gap-2">
-                <Check size={15} /> Following
-              </button>
-            ) : (
-              <button onClick={() => handleProtectedAction(handleToggleFollow)} className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-emerald-100 flex items-center gap-2">
-                <Bell size={15} /> Follow
-              </button>
-            )
-          )}
+         {!isOwner && (
+  isFollowing ? (
+    <button 
+      onClick={() => setShowUnfollowConfirm(true)} 
+      className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-300 flex items-center gap-2"
+    >
+      <Check size={15} /> Following
+    </button>
+  ) : (
+    <button 
+      onClick={() => handleProtectedAction(handleToggleFollow, "follow")} 
+      className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-emerald-100 flex items-center gap-2"
+    >
+      <Bell size={15} /> Follow
+    </button>
+  )
+)}
         </div>
 
         {isOwner && (

@@ -4,6 +4,8 @@ import { Bookmark, Download } from "lucide-react";
 import DownloadConfirmationModal from "../../components/DownloadConfirmationModal.jsx";
 import { lectureUtils } from "../../util/lectureActions.js";
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 const VideoPlayer = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -37,7 +39,9 @@ const VideoPlayer = () => {
         },
         events: {
           'onReady': (event) => {
-            console.log("Player READY. Seeking to:", bookmarkTime);
+            if (isDev) {
+              console.log("Player READY. Seeking to:", bookmarkTime);
+            }
             if (bookmarkTime > 0) {
               event.target.seekTo(bookmarkTime, true);
             }

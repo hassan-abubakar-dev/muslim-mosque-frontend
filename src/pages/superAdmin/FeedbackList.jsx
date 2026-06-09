@@ -44,7 +44,7 @@ const FeedbackList = () => {
             
             setFeedbacks(prev => prev.filter(f => f.id !== id));
             setSelectedFeedback(null);
-            console.log(res.data);
+           
         } catch (err) {
             console.error("Failed to resolve feedback:", err);
         } finally {

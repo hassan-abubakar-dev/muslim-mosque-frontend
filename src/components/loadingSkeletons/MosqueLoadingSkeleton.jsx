@@ -1,6 +1,6 @@
 const MosqueLoadingSkeleton = () => {
   return (
-    <div className="min-h-screen bg-gray-100 p-6 mt-20 animate-pulse">
+    <div className="min-h-screen bg-gray-100 p-6  animate-pulse">
       {/* Mosque card skeleton */}
       <div className="bg-white rounded-xl mb-4 shadow-md overflow-hidden w-full md:w-[87%] mx-auto">
         <div className="bg-gray-300 w-full h-[340px] rounded-md"></div>

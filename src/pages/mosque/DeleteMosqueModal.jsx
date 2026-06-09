@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import privateAxiosInstance from "../../../auth/privateAxiosInstance"; 
+import privateAxiosInstance from "../../../auth/privateAxiosInstance";
+
+const isDev = import.meta.env.VITE_ENV === 'development'; 
 
 const DeleteMosqueModal = ({ isOpen, onClose, mosque, navigate}) => {
   const [typedName, setTypedName] = useState("");
@@ -23,9 +25,11 @@ const DeleteMosqueModal = ({ isOpen, onClose, mosque, navigate}) => {
      const res = await privateAxiosInstance.delete(`/mosques/dete-mosque/${mosque.id}`);
      onClose();
       navigate('/'); 
-    console.log(res.data);
+  
     } catch (err) {
-      console.error("Deletion failed:", err?.response?.data?.message || err);
+      if (isDev) {
+        console.error("Deletion failed:", err?.response?.data?.message || err);
+      }
       setIsDeleting(false); // Reset loading on error
       setIsConfirmed(false); // Return to step 1
       setCountdown(4);

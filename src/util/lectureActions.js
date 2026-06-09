@@ -1,5 +1,7 @@
 import privateAxiosInstance from "../../auth/privateAxiosInstance.js";
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 export const lectureUtils = {
   
   // 1. Unified Bookmark Logic
@@ -7,11 +9,15 @@ export const lectureUtils = {
     
     try {
       const res = await privateAxiosInstance.post(`/bookmarks/toggle/${lectureId}`, { lastPosition });
-      console.log("Saving bookmark for lecture:", lectureId, "at position:", lastPosition);
+      if (isDev) {
+        console.log("Saving bookmark for lecture:", lectureId, "at position:", lastPosition);
+      }
    
       return res.data;
     } catch (err) {
-      console.error("Bookmark API error:", err.response?.data || err.message);
+      if (isDev) {
+        console.error("Bookmark API error:", err.response?.data || err.message);
+      }
       throw err;
     }
   },
@@ -22,7 +28,9 @@ export const lectureUtils = {
       const res = await privateAxiosInstance.post(`/video-library/toggle-save/${lectureId}`);
       return res.data; // { status: 'success', isSaved: true/false }
     } catch (err) {
-      console.error("Library API error:", err.response?.data || err.message);
+      if (isDev) {
+        console.error("Library API error:", err.response?.data || err.message);
+      }
       throw err;
     }
   },

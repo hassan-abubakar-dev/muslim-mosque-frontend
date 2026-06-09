@@ -2,6 +2,8 @@ import { useState } from "react";
 import privateAxiosInstance from "../../../auth/privateAxiosInstance";
 import { useUserContext } from "../../context/UserContext";
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 const SuspendMosqueModal = ({ isOpen, onClose, mosque }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const isSuspended = mosque.status === 'suspended';
@@ -18,7 +20,9 @@ const SuspendMosqueModal = ({ isOpen, onClose, mosque }) => {
       updateMosqueLocally(mosque.id, { status: newStatus });
       onClose();
     } catch (err) {
-      console.error("Status change failed:", err);
+      if (isDev) {
+        console.error("Status change failed:", err);
+      }
     } finally {
       setIsProcessing(false);
     }

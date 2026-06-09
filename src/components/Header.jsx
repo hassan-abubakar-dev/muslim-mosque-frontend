@@ -35,7 +35,9 @@ const Header = ({ onToggleSidebar }) => {
             const res = await privateAxiosInstance.get('notifications/unread-count');
             setNotificationsCount(res.data.unreadCount);
         } catch (err) {
-            console.error('Error fetching unread count:', err);
+            if (isDev) {
+                console.error('Error fetching unread count:', err);
+            }
         }
     };
 
@@ -44,13 +46,19 @@ const Header = ({ onToggleSidebar }) => {
     
     }, []);
 
-  useEffect(() => {
-    // Only trigger the fetch if there is actually a search query or a state selected
+useEffect(() => {
+    // 1. Logic for active searching (debounced)
     if (query.trim().length > 1 || selectedState !== "") {
         const delayDebounce = setTimeout(() => {
             fetchMosques(1, 15, query, selectedState, true);
         }, 600);
         return () => clearTimeout(delayDebounce);
+    } 
+    
+    // 2. Logic for CLEARING search (immediate)
+    else if (query === "" && selectedState === "") {
+        // This fetches the default list (empty query, empty state)
+        fetchMosques(1, 15, '', '', true);
     }
 }, [query, selectedState]);
 

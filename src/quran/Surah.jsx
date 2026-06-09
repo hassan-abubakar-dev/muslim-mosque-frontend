@@ -4,6 +4,8 @@ import publicAxiosInstance from '../../auth/publicAxiosInstance';
 import VersesLoading from './VersesLoading';
 import { useRef } from 'react';
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 export default function Surah() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -43,7 +45,9 @@ const pageRef = useRef(1);
           : []
       );
     } catch (err) {
-      console.error(err.response?.data || err.message);
+      if (isDev) {
+        console.error(err.response?.data || err.message);
+      }
       setError('فشل في تحميل السورة');
     } finally {
       setLoading(false);
@@ -88,11 +92,15 @@ const pageRef = useRef(1);
 
     setVerses((prev) => [...prev, ...res.data.data.verses]);
     setPage(nextPage);
-console.log('Total pages:', res.data.data.totalPages, 'Current page:', nextPage);
+    if (isDev) {
+      console.log('Total pages:', res.data.data.totalPages, 'Current page:', nextPage);
+    }
     setHasMore(nextPage < res.data.data.totalPages);
 
   } catch (err) {
-    console.error(err);
+    if (isDev) {
+      console.error(err);
+    }
   } finally {
     setLoading(false);
   }

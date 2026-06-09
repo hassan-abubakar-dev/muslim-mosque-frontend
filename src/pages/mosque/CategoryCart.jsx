@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import privateAxiosInstance from "../../../auth/privateAxiosInstance"; // Adjust path as needed
 import truncateByWords from "../../util/splitWord";
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 const CategoryCart = ({ categories, isOwner, setCategories, setIsEdit, setShowModal, setNewCategory }) => {
     const [openMenuId, setOpenMenuId] = useState(null);
     const [showDeleteCategory, setShowDeleteCategory] = useState(null);
@@ -16,10 +18,12 @@ const CategoryCart = ({ categories, isOwner, setCategories, setIsEdit, setShowMo
             if (res.status < 400) {
                 setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
                 setShowDeleteCategory(null);
-                console.log(res.data);
+                
             }
         } catch (err) {
-            console.error("Delete failed:", err.response.data);
+            if (isDev) {
+              console.error("Delete failed:", err.response.data);
+            }
         }finally{
             setShowModal(null);
         }

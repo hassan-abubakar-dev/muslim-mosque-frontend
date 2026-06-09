@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom"; 
 import MasjibaLogoMark from '../assets/masjiba-logo-mark.png'; 
 import publicAxiosInstance from "../../auth/publicAxiosInstance";
-
+const isDev = import.meta.env.VITE_ENV === 'development';
 const ForgotPassword = () => {
   const navigate = useNavigate();
   
@@ -27,7 +27,9 @@ const ForgotPassword = () => {
       
       if (response.status < 400) {
         setSuccess("If this email is registered, a verification code has been sent.");
-        console.log("Password recovery request successful:", response.data);
+        if (isDev) {
+          console.log("Password recovery request successful:", response.data);
+        }
         // 🛠️ FIX: Navigate FIRST using the captured email string so the next page can display it
         navigate('/verify-email', { state: { email: submittedEmail, flowType: 'recovery' }, replace: true });
         
@@ -36,7 +38,9 @@ const ForgotPassword = () => {
       }
 
     } catch (err) {
-      console.error("Error during password recovery request:", err);
+      if (isDev) {
+        console.error("Error during password recovery request:", err);
+      }
       // Since the backend safely handles missing emails, an error here means a real 500 server or network drop
       setError(err?.response?.data?.message || "Something went wrong on the server. Please try again later.");
     } finally {

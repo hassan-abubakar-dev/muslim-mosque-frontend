@@ -96,7 +96,7 @@ useEffect(() => {
   if (authLoading) return <SplashScreen />;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 mt-20">
+    <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto space-y-8 mb-20">
         <h1 className="text-3xl font-black text-emerald-900 flex items-center gap-2">
           <Activity className="text-emerald-700 w-8 h-8" /> Platform Control Center

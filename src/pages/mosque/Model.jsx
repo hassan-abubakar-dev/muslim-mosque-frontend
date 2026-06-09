@@ -62,7 +62,9 @@ const handleCreateCategory = async () => {
       const result = await uploadImageToCloudinary(uploadedFile);
       imageUrl = result.imageUrl;
       publicId = result.publicId;
-      console.log('publicId, imageUrl', publicId, imageUrl);
+      if (isDev) {
+        console.log('publicId, imageUrl', publicId, imageUrl);
+      }
     }
 
     // 3. Prepare body with Cloudinary data
@@ -82,7 +84,7 @@ const handleCreateCategory = async () => {
 
     // 5. Success Handling
     if (res.status < 400) {
-      console.log(res.data);
+
       setShowModal(false);
       setNewCategory(initialCategory);
       setUploadedFile(null); // Don't forget to clear this!
@@ -91,7 +93,9 @@ const handleCreateCategory = async () => {
 
   } catch (err) {
     // Keep your specific error handling logic
-    console.log(err?.response?.data || err);
+    if (isDev) {
+      console.log(err?.response?.data || err);
+    }
     if (err.response?.data?.message === "Teacher name is required") {
       setCreateCategoryError("Teacher name is required");
     } else if (err.response?.data?.message === "Category with this name and teacher already exists") {
@@ -100,7 +104,9 @@ const handleCreateCategory = async () => {
       setShowModal(false);
       setError(true);
     }
-    console.error(err.response?.data || err.message);
+    if (isDev) {
+      console.error(err.response?.data || err.message);
+    }
   } finally {
     setLoading(false);
   }
@@ -138,15 +144,17 @@ const handleUpdateCategory = async () => {
 
     // 4. Success handling
     if (res.status < 400) {
-      console.log(res.data);
+      
       setNewCategory(initialCategory);
       setShowModal(false);
       setUploadedFile(null);
       await fetchAllCategories(activeMosque.id);
-      if (isDev) console.log(res.data);
+     
     }
   } catch (err) {
-     console.log(err.response.data || err);
+     if (isDev) {
+       console.log(err.response.data || err);
+     }
     setLoading(false);
     if (isDev) console.log(err.response?.data || err.message);
 

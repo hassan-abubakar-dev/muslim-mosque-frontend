@@ -17,7 +17,7 @@ const handleAction = async (id) => {
                 if (res.status < 400) {
                     // Update Suspended list: Remove the now-unsuspended mosque
                    setSuspendedMosques(prev => prev.filter(m => m.id !== id));
-                    console.log(res.data)
+               
                 }
             } else {
                 const res = await privateAxiosInstance.put(`/mosques/verified-mosque/${id}`);

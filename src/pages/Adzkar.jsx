@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import publicAxiosInstance from '../../auth/publicAxiosInstance';
 
+const isDev = import.meta.env.VITE_ENV === 'development';
+
 export default function Adzkar() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,7 +26,9 @@ export default function Adzkar() {
         setLoading(false);
       })
       .catch(err => {
-        console.error('Failed to fetch adhkar:', err);
+        if (isDev) {
+          console.error('Failed to fetch adhkar:', err);
+        }
         setError('Failed to load adhkar from server — showing local data.');
         setItems('');
         setLoading(false);
@@ -88,7 +92,7 @@ export default function Adzkar() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white pb-24 pt-20">
+    <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white pb-24 ">
       <div className="max-w-4xl mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold text-emerald-700 mb-4 text-center">Adhkar & Dua</h1>
 

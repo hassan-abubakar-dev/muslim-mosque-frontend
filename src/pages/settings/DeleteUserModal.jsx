@@ -14,7 +14,7 @@ const DeleteUserModal = ({ isOpen, onClose, userEmail }) => {
     try {
      const res = await privateAxiosInstance.delete('/users/delete-account');
 
-     console.log(res.data)
+  
       // Cleanup: Remove auth tokens
       localStorage.removeItem('accessToken');
       
