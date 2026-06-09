@@ -11,6 +11,7 @@ import LectureCardSkeleton from "../../components/loadingSkeletons/LectureCardSk
 import CategoryHeaderSkeleton from "../../components/loadingSkeletons/CategoryHeaderSkeleton.jsx";
 import DownloadConfirmationModal from "../../components/DownloadConfirmationModal.jsx";
 import { lectureUtils } from "../../util/lectureActions.js";
+import formatDuration from "../../util/time.js";
 
 
 
@@ -81,13 +82,6 @@ const CategoryLecture = () => {
   }, [loading, hasMore]);
 
 
-  const formatDuration = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s < 10 ? "0" : ""}${s}`;
-  };
-
-
 
 
   const handleDeleteLecture = async (lectureId) => {
@@ -145,6 +139,7 @@ const CategoryLecture = () => {
 
       if (res.status < 400) {
         const { lectures: newLectures, totalPages, currentPage } = res.data;
+        console.log(res.data)
 
         setLectures(prev => isReset ? newLectures : [...prev, ...newLectures]);
 

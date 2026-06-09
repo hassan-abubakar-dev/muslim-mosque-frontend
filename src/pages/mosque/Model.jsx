@@ -1,8 +1,9 @@
 import { useState } from "react";
 import privateAxiosInstance from "../../../auth/privateAxiosInstance";
+import { uploadImageToCloudinary } from "../../util/cloudinary.js";
 
 
-const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCategory, setError, mosqueFromState, fetchAllCategories }) => {
+const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCategory, setError, activeMosque, fetchAllCategories }) => {
 
     const isDev = import.meta.env.VITE_ENV === 'development'
 
@@ -44,149 +45,118 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
 
    
 
-    const handleCreateCategory = async () => {
-      if (!validate()) return;
+const handleCreateCategory = async () => {
+  if (!validate()) return;
   setLoading(true);
-  
+  setCreateCategoryError(""); // Clear previous errors
 
-   const finalName = newCategory?.name === "Other" ? newCategory?.customName : newCategory?.name;
+  const finalName = newCategory?.name === "Other" ? newCategory?.customName : newCategory?.name;
+
   try {
-    let fileKey = null;
+    // 1. Define variables in scope
+    let imageUrl = null;
+    let publicId = null;
 
-
+    // 2. Upload to Cloudinary if a file exists
     if (uploadedFile) {
-      const res1 = await privateAxiosInstance.post(
-        `/signed-url/generate-upload-url`,
-        {
-          fileName: uploadedFile.name,
-          fileType: uploadedFile.type,
-        }
-      );
-
-      const { uploadUrl, key } = res1.data;
-
-      // 🔹 STEP 2: Upload directly to R2
-      await fetch(uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": uploadedFile.type,
-        },
-        body: uploadedFile,
-      });
-
-      fileKey = key; // 🔥 important
+      const result = await uploadImageToCloudinary(uploadedFile);
+      imageUrl = result.imageUrl;
+      publicId = result.publicId;
+      console.log('publicId, imageUrl', publicId, imageUrl);
     }
 
-    // 🔹 STEP 3: Send data to backend
+    // 3. Prepare body with Cloudinary data
     const body = {
       name: finalName,
       teacherName: newCategory?.teacherName,
       information: newCategory?.information,
-      fileKey, // will be null if no image
+      // Map to your new fields
+      ...(imageUrl ? { imageUrl, publicId } : {}),
     };
 
+    // 4. Send to backend
     const res = await privateAxiosInstance.post(
-      `/categories/create-category/${mosqueFromState.id}`,
+      `/categories/create-category/${activeMosque.id}`,
       body
     );
 
-    // success
+    // 5. Success Handling
     if (res.status < 400) {
+      console.log(res.data);
       setShowModal(false);
-      setCreateCategoryError("");
       setNewCategory(initialCategory);
-      await fetchAllCategories(mosqueFromState.id);
+      setUploadedFile(null); // Don't forget to clear this!
+      await fetchAllCategories(activeMosque.id);
     }
 
   } catch (err) {
+    // Keep your specific error handling logic
+    console.log(err?.response?.data || err);
     if (err.response?.data?.message === "Teacher name is required") {
       setCreateCategoryError("Teacher name is required");
-    } else if (
-      err.response?.data?.message ===
-      "Category with this name and teacher already exists"
-    ) {
-      setCreateCategoryError(
-        "Category with this name and teacher already exists"
-      );
+    } else if (err.response?.data?.message === "Category with this name and teacher already exists") {
+      setCreateCategoryError("Category with this name and teacher already exists");
     } else {
       setShowModal(false);
       setError(true);
     }
-
     console.error(err.response?.data || err.message);
   } finally {
     setLoading(false);
   }
 };
 
-   const handleUpdateCategory = async () => {
-    if (!validate()) return;
+const handleUpdateCategory = async () => {
+  if (!validate()) return;
   setLoading(true);
 
-    const finalName = newCategory?.name === "Other" ? newCategory?.customName : newCategory?.name;
+  const finalName = newCategory?.name === "Other" ? newCategory?.customName : newCategory?.name;
+
   try {
-    let fileKey = null;
+    // 1. Prepare values to be sent to backend
+    let imageUrl = newCategory?.imageUrl || null; // Keep existing if no new one
+    let publicId = newCategory?.publicId || null;
 
-    // 🔥 STEP 1: upload to R2 IF user selected new image
+    // 2. Upload to Cloudinary ONLY if user selected a new image
     if (uploadedFile) {
-      const res1 = await privateAxiosInstance.post(
-        `/signed-url/generate-upload-url`,
-        {
-          fileName: uploadedFile.name,
-          fileType: uploadedFile.type,
-        }
-      );
-
-      const { uploadUrl, key } = res1.data;
-
-      // upload file directly to R2
-      await fetch(uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": uploadedFile.type,
-        },
-        body: uploadedFile,
-      });
-
-      fileKey = key; // 🔥 this is what backend needs
+      const result = await uploadImageToCloudinary(uploadedFile);
+      imageUrl = result.imageUrl;
+      publicId = result.publicId;
     }
 
-    // 🔥 STEP 2: send data to backend (NO formData anymore)
+    // 3. Send updated data to backend
     const res = await privateAxiosInstance.put(
       `/categories/update-category/${newCategory.id}`,
       {
         name: finalName,
         teacherName: newCategory?.teacherName,
         information: newCategory?.information,
-        fileKey // null if no new image
+        imageUrl,    // Sending the new or existing URL
+        publicId,    // Sending the new or existing publicId
       }
     );
 
+    // 4. Success handling
     if (res.status < 400) {
+      console.log(res.data);
       setNewCategory(initialCategory);
       setShowModal(false);
-      setLoading(false);
-await fetchAllCategories(mosqueFromState.id)
+      setUploadedFile(null);
+      await fetchAllCategories(activeMosque.id);
       if (isDev) console.log(res.data);
     }
-
   } catch (err) {
+     console.log(err.response.data || err);
     setLoading(false);
+    if (isDev) console.log(err.response?.data || err.message);
 
-    if (isDev) {
-      console.log(err.response?.data || err.message);
-    }
-
-    if (
-      err.response?.data?.message ===
-      "Category with this name and teacher already exists"
-    ) {
-      setCreateCategoryError(
-        "Category with this name and teacher already exists"
-      );
+    if (err.response?.data?.message === "Category with this name and teacher already exists") {
+      setCreateCategoryError("Category with this name and teacher already exists");
     } else {
       setError(true);
     }
+  } finally {
+    setLoading(false);
   }
 };
 
@@ -289,7 +259,7 @@ await fetchAllCategories(mosqueFromState.id)
                     </button>
                     {!isEdit && (
                         <button
-                            onClick={() => handleCreateCategory(mosqueFromState.id)}
+                            onClick={() => handleCreateCategory(activeMosque.id)}
                             disabled={loading}
                             className="px-4 py-2 bg-emerald-700 text-white rounded-md cursor-pointer hover:bg-emerald-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
                         >

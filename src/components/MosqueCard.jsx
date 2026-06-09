@@ -4,6 +4,8 @@ import truncateByWords from '../util/splitWord';
 const MosqueCard = ({ mosque, openMosque, handleFollowMosque, loggedInUser, followMosqueIds }) => {
   const isFollowing = followMosqueIds?.includes(String(mosque.id));
 
+  const showPending = mosque.status === 'pending' || mosque.status === 'suspended';
+
   return (
     <div
       role="button"
@@ -32,12 +34,16 @@ const MosqueCard = ({ mosque, openMosque, handleFollowMosque, loggedInUser, foll
           >
             {truncateByWords(mosque.name, 3)}
           </h3>
-          <span 
-            className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full whitespace-nowrap shrink-0" 
-            title={`Status: ${mosque.status}`}
-          >
-            {mosque.status}
-          </span>
+         <span 
+    className={`text-xs px-2 py-1 rounded-full whitespace-nowrap shrink-0 font-medium ${
+      showPending 
+        ? 'bg-amber-100 text-amber-700' 
+        : 'bg-emerald-100 text-emerald-700'
+    }`}
+    title={`Status: ${mosque.status}`}
+  >
+    {showPending ? 'Under Review' : 'Verified'}
+  </span>
         </div>
 
         {/* Location Area */}

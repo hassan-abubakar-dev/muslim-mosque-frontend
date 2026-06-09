@@ -9,6 +9,8 @@ import PendingMosqueReview from './PendingMosqueReview.jsx';
 import UserRoster from './UserRoster.jsx';
 import ReportList from './ReportList.jsx';
 import FeedbackList from './FeedbackList.jsx';
+import SuspendedMosqueList from './SuspendedMosqueList.jsx';
+
 
 export default function SuperAdminDashboard() {
   const { loggedInUser } = useUserContext();
@@ -26,6 +28,7 @@ export default function SuperAdminDashboard() {
   const [userDirectory, setUserDirectory] = useState([]);
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [selectedMosque, setSelectedMosque] = useState(null);
+  const [suspendedMosques, setSuspendedMosques] = useState([]);
 
   const [userPage, setUserPage] = useState(1);
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
@@ -113,7 +116,7 @@ useEffect(() => {
 
           <div className="lg:col-span-2 h-full bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm flex flex-col">
             <div className="flex border-b border-gray-100 px-4 pt-2 gap-2">
-              {['agents', 'reports', 'feedbacks'].map(tab => (
+              {['agents', 'reports', 'feedbacks', 'suspensions'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-3 text-xs font-bold border-b-2 capitalize ${activeTab === tab ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-400'}`}>
                   {tab}
                 </button>
@@ -136,18 +139,25 @@ useEffect(() => {
               {activeTab === 'feedbacks' && (
                 <FeedbackList />
               )}
+               {activeTab === 'suspensions' && (
+                <SuspendedMosqueList 
+                  setSelectedMosque={setSelectedMosque}
+                   mosques={suspendedMosques}         
+                   setMosques={setSuspendedMosques}
+               />
+              )}
             </div>
           </div>
         </div>
       </div>
-
-      {selectedMosque && (
-        <SelectedMosqueModel
-          selectedMosque={selectedMosque}
-          setSelectedMosque={setSelectedMosque}
-          setPendingMosques={setPendingMosques}
-        />
-      )}
+{selectedMosque && (
+  <SelectedMosqueModel
+    selectedMosque={selectedMosque}
+    setSelectedMosque={setSelectedMosque}
+    setPendingMosques={setPendingMosques}
+    setSuspendedMosques={setSuspendedMosques} 
+  />
+)}
     </div>
   );
 }

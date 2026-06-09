@@ -5,24 +5,35 @@ import privateAxiosInstance from "../../../auth/privateAxiosInstance";
 import { useUserContext } from "../../context/UserContext";
  import { toggleMosqueFollow } from '../../util/follow.js';
 import MosqueProfileSkeleton from "../../components/loadingSkeletons/MosqueProfileSkeleton.jsx";
+import { uploadImageToCloudinary } from "../../util/cloudinary.js.js";
 
 const MosqueProfile = ({ mosque }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
-const {loggedInUser, followMosqueIds} = useUserContext();
+const {loggedInUser, followMosqueIds, setMosques} = useUserContext();
   // original image (fallback source)
-  const [originalImage, setOriginalImage] = useState(mosque?.mosqueProfile?.image);
+  const [originalImage, setOriginalImage] = useState(null);
 
+  const isOwner = loggedInUser?.managedMosques?.some(
+    (m) => String(m.id) === String(mosque?.id)
+  );
   const isFollowing = followMosqueIds?.includes(String(mosque?.id));
 
 const [loadingProfile, setLoadingProfile] = useState(true);
+
+
+useEffect(() => {
+  setOriginalImage(mosque?.mosqueProfile?.image);
+}, [mosque?.mosqueProfile?.image]);
+
+
 
 useEffect(() => {
   if(mosque) {
     setLoadingProfile(false);
   }
-}, [mosque]);
+}, [mosque]); 
 
 // Inside HomePage component
 const handleFollowMosque = async (e, mosque) => {
@@ -53,47 +64,43 @@ const handleFollowMosque = async (e, mosque) => {
   };
 
   // SAVE (UPLOAD)
-  const handleUpload = async () => {
+ const handleUpload = async () => {
     if (!selectedImage) return;
 
     setUploading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("file", selectedImage);
-      formData.append(
-        "upload_preset",
-        import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-      );
-      
+      const { imageUrl, publicId } = await uploadImageToCloudinary(selectedImage);
 
-        const res = await fetch(
-          `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
-          {
-            method: "POST",
-            body: formData,
-          }
-        );
-      
-        const data = await res.json();
-       
-          const imageUrl = data.secure_url;
-          const publicId = data.public_id;
-         const apiRes = await privateAxiosInstance.put(`/profiles/update-mosque-profile/${mosque.id}`, { imageUrl, publicId });
-         if(apiRes.status < 400){
-          console.log('mosque Profile updated successfully', apiRes.data.userProfile);
-            setOriginalImage(imageUrl); // update original image to new one
-         }
+      const apiRes = await privateAxiosInstance.put(`/profiles/update-mosque-profile/${mosque.id}`, { 
+        imageUrl, 
+        publicId 
+      });
 
-      // reset state
+      if (apiRes.status < 400) {
+        const newImageUrl = imageUrl;
+
+        // 2. Update local UI state
+        setOriginalImage(newImageUrl);
+
+        // 3. Update mosque list in context so the shared state stays in sync
+        setMosques(prev => prev.map(m =>
+          m.id === mosque.id
+            ? { ...m, mosqueProfile: { ...m.mosqueProfile, image: newImageUrl } }
+            : m
+        ));
+      }
+
       setPreview(null);
       setSelectedImage(null);
     } catch (err) {
-      console.log(err);
+      console.error("Upload error:", err);
     } finally {
       setUploading(false);
     }
   };
+
+  const showPending = mosque.status === 'pending' || mosque.status === 'suspended';
 
   if(loadingProfile){
 
@@ -164,9 +171,13 @@ const handleFollowMosque = async (e, mosque) => {
             {mosque.name}
           </h2>
 
-          <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">
-            {mosque.status}
-          </span>
+         <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+    showPending 
+      ? 'bg-amber-100 text-amber-700' 
+      : 'bg-emerald-100 text-emerald-700'
+  }`}>
+    {showPending ? 'Under Review' : 'Verified'}
+  </span>
         </div>
 
         {/* LOCATION */}
@@ -189,11 +200,15 @@ const handleFollowMosque = async (e, mosque) => {
           </span>
  \
 
-   {loggedInUser && (
-      <span className="text-sm text-emerald-600 font-medium">
-        {isFollowing ? "Following" : "Not Following"}
-      </span>
-    )}
+ {loggedInUser && (
+        <span className="text-sm text-emerald-600 font-medium">
+          {/* 3. Priority logic: If they are the Admin, show Admin, else show Following status */}
+          {isOwner 
+            ? <span className="bg-emerald-50 px-2 py-1 rounded-md font-bold">Admin</span> 
+            : (isFollowing ? "Following" : "Not Following")
+          }
+        </span>
+      )}
         </div>
       </div>
     </div>

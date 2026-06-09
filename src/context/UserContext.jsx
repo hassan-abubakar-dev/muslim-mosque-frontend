@@ -127,6 +127,7 @@ const fetchMosques = async (page = 1, limit = 10, searchQuery = '', state = '', 
 
     if (res.status < 400) {
       const newMosques = res.data.mosques;
+      console.log('mosques', res.data);
       
       // Update data: replace if reset=true, else append
       setMosques(prev => reset ? newMosques : [...prev, ...newMosques]);
@@ -139,6 +140,14 @@ const fetchMosques = async (page = 1, limit = 10, searchQuery = '', state = '', 
   } finally {
     setIsFetching(false);
   }
+};
+
+
+
+const updateMosqueLocally = (mosqueId, updatedFields) => {
+  setMosques(prev => prev.map(m => 
+    String(m.id) === String(mosqueId) ? { ...m, ...updatedFields } : m
+  ));
 };
 
 const fetchFollowedMosqueIds = async () => {
@@ -170,7 +179,7 @@ const fetchFollowedMosqueIds = async () => {
       };
 
       const fetchPublicData = async () => {
-        // other data not need login
+        await fetchMosques(1, 20, '', '', true);
       };
 
       (async () => {
@@ -189,7 +198,8 @@ const fetchFollowedMosqueIds = async () => {
         loggedInUser, setLoggedInUser, fetchUserData, profileLoading, setProfileLoading, userProfile, fetchUserProfile,  appLoading,
         authLoading, setAuthLoading, logOutError, setLogOutError, setUserProfile, followedMosques, setFollowedMosques, notifications, setNotifications, fetchNotifications, showProfileMenu,
          setShowProfileMenu, toastToCreateAccountMessage, setToastToCreateAccountMessage, mosques, setMosques, fetchMosques, hasMore, isFetching,
-          followMosqueIds, setFollowMosqueIds, fetchFollowedMosqueIds, notificationsCount, setNotificationsCount, resetNotificationCount, hasMoreNotifications, isFetchingNotifications
+          followMosqueIds, setFollowMosqueIds, fetchFollowedMosqueIds, notificationsCount, setNotificationsCount, resetNotificationCount, hasMoreNotifications,
+           isFetchingNotifications, updateMosqueLocally
  }}>
       {children}
     </UserContext.Provider>

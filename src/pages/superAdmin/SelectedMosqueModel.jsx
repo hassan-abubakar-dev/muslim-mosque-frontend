@@ -1,18 +1,34 @@
 import { X } from "lucide-react";
 import privateAxiosInstance from "../../../auth/privateAxiosInstance";
 
-const SelectedMosqueModel = ({ selectedMosque, setSelectedMosque, setPendingMosques }) => {
+const SelectedMosqueModel = ({ 
+    selectedMosque, 
+  setSelectedMosque, 
+  setPendingMosques, 
+  setSuspendedMosques }) => {
 
-    const handleApproveMosque = async (id) => {
+const isSuspended = selectedMosque.status === 'suspended';
+
+   
+const handleAction = async (id) => {
         try {
-            const res = await privateAxiosInstance.put(`/mosques/verified-mosque/${id}`);
-            if (res.status < 400) {
-                setSelectedMosque(null);
-                // Update parent state: remove the verified mosque from the queue
-                setPendingMosques(prev => prev.filter(m => m.id !== id));
+            if (isSuspended) {
+                const res = await privateAxiosInstance.patch(`/mosques/moderate/${id}`);
+                if (res.status < 400) {
+                    // Update Suspended list: Remove the now-unsuspended mosque
+                   setSuspendedMosques(prev => prev.filter(m => m.id !== id));
+                    console.log(res.data)
+                }
+            } else {
+                const res = await privateAxiosInstance.put(`/mosques/verified-mosque/${id}`);
+                if (res.status < 400) {
+                    // Update Pending list: Remove the now-verified mosque
+                    setPendingMosques(prev => prev.filter(m => m.id !== id));
+                }
             }
+            setSelectedMosque(null);
         } catch (err) {
-            console.error("Verification failed", err.response?.data || err);
+            console.error("Action failed", err);
         }
     };
 
@@ -43,11 +59,13 @@ const SelectedMosqueModel = ({ selectedMosque, setSelectedMosque, setPendingMosq
                     </div>
                     
                     <div className="space-y-1">
-                        <p className="text-gray-400 uppercase font-bold tracking-wider text-[10px]">Applicant/Admin Identity</p>
-                        <p className="text-slate-800 font-bold text-sm">
-                            {selectedMosque?.mosquAdmin[0]?.user?.firstName} {selectedMosque?.mosquAdmin[0]?.user?.surName}
-                        </p>
-                        <p className="text-emerald-700 font-semibold">{selectedMosque?.mosquAdmin[0]?.user?.email}</p>
+                      {/* Safely access the admin user info */}
+<p className="text-slate-800 font-bold text-sm">
+    {selectedMosque?.mosquAdmin?.[0]?.user?.firstName} {selectedMosque?.mosquAdmin?.[0]?.user?.surName}
+</p>
+<p className="text-emerald-700 font-semibold">
+    {selectedMosque?.mosquAdmin?.[0]?.user?.email}
+</p>
                     </div>
                 </div>
 
@@ -59,12 +77,12 @@ const SelectedMosqueModel = ({ selectedMosque, setSelectedMosque, setPendingMosq
                     >
                         Cancel Audit
                     </button>
-                    <button 
-                        onClick={() => handleApproveMosque(selectedMosque.id)} 
-                        className="px-4 py-2 bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-sm shadow-emerald-200 cursor-pointer hover:bg-emerald-800 transition-all"
-                    >
-                        Verify Mosque & Deploy
-                    </button>
+                   <button 
+            onClick={() => handleAction(selectedMosque.id)} 
+            className={`px-4 py-2 text-white font-bold rounded-xl text-xs ${isSuspended ? 'bg-amber-700' : 'bg-emerald-700'}`}
+        >
+            {isSuspended ? "Unsuspend Mosque" : "Verify Mosque & Deploy"}
+        </button>
                 </div>
             </div>
         </div>

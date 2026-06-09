@@ -7,6 +7,7 @@ import { lectureUtils } from "../util/lectureActions.js";
 import LectureCard from "../components/LectureCard.jsx";
 import LectureCardSkeleton from "../components/loadingSkeletons/LectureCardSkeleton.jsx";
 import DownloadConfirmationModal from "../components/DownloadConfirmationModal.jsx";
+import formatDuration from "../util/time.js";
 
 const BookmarkPage = () => {
   const [activeTab, setActiveTab] = useState("all");
@@ -105,11 +106,6 @@ const BookmarkPage = () => {
     }
   };
 
-  const formatDuration = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s < 10 ? "0" : ""}${s}`;
-  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 mt-20">

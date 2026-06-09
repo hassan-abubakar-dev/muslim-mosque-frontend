@@ -16,9 +16,12 @@ const CategoryCart = ({ categories, isOwner, setCategories, setIsEdit, setShowMo
             if (res.status < 400) {
                 setCategories((prev) => prev.filter((cat) => cat.id !== categoryId));
                 setShowDeleteCategory(null);
+                console.log(res.data);
             }
         } catch (err) {
-            console.error("Delete failed:", err);
+            console.error("Delete failed:", err.response.data);
+        }finally{
+            setShowModal(null);
         }
     };
 

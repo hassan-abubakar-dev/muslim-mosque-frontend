@@ -46,10 +46,8 @@ const handleFollowMosque = async (e, mosque) => {
   }
 };
 
-  // Initial Fetch
-  useEffect(() => {
-    fetchMosques(1, 10, '', '', true); 
-  }, []);
+  // remove Initial Fetch
+
 
   // Load more
   useEffect(() => {
@@ -86,7 +84,7 @@ const handleFollowMosque = async (e, mosque) => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-            {mosques.map((mosque) => (
+            {mosques.length > 0 && mosques.map((mosque) => (
               <MosqueCard
                 key={mosque.id}
                 mosque={mosque}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../context/UserContext';
 import MosqueProfile from './MosqueProfile';
@@ -19,7 +19,11 @@ const NotificationPage = () => {
     hasMoreNotifications 
   } = useUserContext();
 
-  const mosque = location?.state?.mosqueFromState || null;
+  const mosque = useMemo(() => {
+    return followedMosques.find(m => String(m.id) === String(id)) || null;
+}, [followedMosques, id]);
+
+
   const backPath = id ? `/mosque/${id}` : '/';
 
   // Initial fetch on mount

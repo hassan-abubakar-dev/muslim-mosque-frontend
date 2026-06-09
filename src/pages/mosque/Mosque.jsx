@@ -1,5 +1,5 @@
-import { useEffect, useState, useContext } from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState, useContext, useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { MoreVertical, Pencil, Trash2, Flag, X, Check, Bell } from 'lucide-react';
 import MosqueLoadingSkeleton from '../../components/loadingSkeletons/MosqueLoadingSkeleton';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance';
@@ -13,17 +13,17 @@ import ReportCard from './ReportCartModel';
 import { toggleMosqueFollow } from '../../util/follow.js'; 
 import ToastToCreateAccount from '../../components/ToastToCreateAccount.jsx';
 import CategoryCart from './CategoryCart.jsx';
+import DeleteMosqueModal from './DeleteMosqueModal.jsx';
+import SuspendMosqueModal from './SuspendMosqueModal.jsx';
 
 const Mosque = () => {
   const { id } = useParams();
-  const location = useLocation();
   const navigate = useNavigate();
   const { loggedInUser, toastToCreateAccountMessage, setToastToCreateAccountMessage, followMosqueIds, 
-  setFollowMosqueIds } = useContext(UserContext);
+  setFollowMosqueIds, mosques } = useContext(UserContext);
 
   const [showModal, setShowModal] = useState(false);
   const [showCreateAnnouncementModal, setShowCreateAnnouncementModal] = useState(false);
-  const [isValidMosque, setIsValidMosque] = useState(false);
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [openReportModel, setOpenReportModel] = useState(false);
   const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
@@ -32,14 +32,24 @@ const Mosque = () => {
   const [openMenuId, setOpenMenuId] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
   const [newCategory, setNewCategory] = useState({ name: 'Quran', information: '', teacherName: '' });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
 
   const isDev = import.meta.env.VITE_ENV === 'development';
-  const [mosqueFromState, setMosqueFromState] = useState(location.state?.mosque || null);
 
-  const isOwner = loggedInUser?.managedMosques?.some(
-    (m) => String(m.id) === String(mosqueFromState?.id)
-  );
+ const activeMosque = useMemo(() => {
+  return mosques.find((m) => String(m.id) === String(id)) || null;
+}, [mosques, id]);
 
+ 
+const isSuperAdmin = loggedInUser?.role === 'superAdmin';
+
+const isOwner = loggedInUser?.managedMosques?.some(
+  (m) => String(m.id) === String(activeMosque?.id)
+);
+
+// This variable will determine if the user can perform "Admin" actions
+const canManage = isOwner || isSuperAdmin;
   const handleProtectedAction = (actionCallback) => {
     if (!loggedInUser) {
       setToastToCreateAccountMessage("Please log in to perform this action.");
@@ -49,10 +59,10 @@ const Mosque = () => {
   };
 
   // Updated: Now using the imported utility
-  const isFollowing = followMosqueIds.includes(String(mosqueFromState?.id));
+ const isFollowing = followMosqueIds.includes(String(activeMosque?.id));
   
   const handleToggleFollow = async () => {
-  const { success, mosqueId, follow } = await toggleMosqueFollow(mosqueFromState.id);
+  const { success, mosqueId, follow } = await toggleMosqueFollow(activeMosque.id);
   
   if (success) {
     const formattedId = String(mosqueId);
@@ -81,14 +91,14 @@ const Mosque = () => {
   };
 
   useEffect(() => {
-    if (mosqueFromState && String(mosqueFromState.id) === String(id)) setIsValidMosque(true);
-  }, [mosqueFromState, id]);
+    if (!activeMosque) {
+      setCategories([]);
+      return;
+    }
+    fetchAllCategories(activeMosque.id);
+  }, [activeMosque]);
 
-  useEffect(() => {
-    if (isValidMosque) fetchAllCategories(mosqueFromState.id);
-  }, [isValidMosque]);
-
-  if (!isValidMosque) return <MosqueLoadingSkeleton />;
+  if (!activeMosque) return <MosqueLoadingSkeleton />;
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 mt-20">
@@ -117,13 +127,13 @@ const Mosque = () => {
       )}
 
       <MosqueProfile
-         mosque={mosqueFromState}
+         mosque={activeMosque}
          followMosqueIds={followMosqueIds}
        />
 
       <div className="max-w-6xl mx-auto mb-8 flex items-center justify-between gap-4 mt-5 md:ml-10">
         <div className="flex items-center gap-10 md:gap-48">
-          <button onClick={() => navigate(`/mosque/${id}/announcements`, { state: { mosqueFromState } })} className="bg-emerald-600 text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-emerald-700">Announcements</button>
+          <button onClick={() => navigate(`/mosque/${id}/announcements`)} className="bg-emerald-600 text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-emerald-700">Announcements</button>
           {isOwner && (
             <button onClick={() => setShowCreateAnnouncementModal(true)} className="bg-gray-200 text-emerald-800 px-5 py-2 rounded-lg font-bold text-sm hover:bg-gray-300 ">+ <span className='hidden md:inline'>Create</span> Announcement</button>
           )}
@@ -155,9 +165,9 @@ const Mosque = () => {
         )}
       </div>
 
-      {showModal && <Model newCategory={newCategory} setNewCategory={setNewCategory} setShowModal={setShowModal} isEdit={isEdit} setError={setError} mosqueFromState={mosqueFromState} fetchAllCategories={fetchAllCategories} />}
-      {showCreateAnnouncementModal && <CreateAnnouncementModal isOpen={showCreateAnnouncementModal} onClose={() => setShowCreateAnnouncementModal(false)} mosqueFromState={mosqueFromState} onCreated={() => setShowCreateAnnouncementModal(false)} />}
-      {openReportModel && <ReportCard mosqueId={mosqueFromState.id} mosqueName={mosqueFromState.name} onClose={() => setOpenReportModel(false)} />}
+      {showModal && <Model newCategory={newCategory} setNewCategory={setNewCategory} setShowModal={setShowModal} isEdit={isEdit} setError={setError} activeMosque={activeMosque} fetchAllCategories={fetchAllCategories} />}
+      {showCreateAnnouncementModal && <CreateAnnouncementModal isOpen={showCreateAnnouncementModal} onClose={() => setShowCreateAnnouncementModal(false)} mosque={activeMosque} onCreated={() => setShowCreateAnnouncementModal(false)} />}
+      {openReportModel && <ReportCard mosqueId={activeMosque.id} mosqueName={activeMosque.name} onClose={() => setOpenReportModel(false)} />}
       <AnnouncementModal announcement={selectedAnnouncement} isOpen={!!selectedAnnouncement} onClose={() => setSelectedAnnouncement(null)} />
 
     <CategoryCart
@@ -168,6 +178,56 @@ const Mosque = () => {
       setShowModal={setShowModal}
       setNewCategory={setNewCategory}
     />
+
+    {showDeleteModal && (
+  <DeleteMosqueModal 
+    isOpen={showDeleteModal} 
+    onClose={() => setShowDeleteModal(false)}
+    mosque={activeMosque}
+    navigate={navigate}
+  />
+)}
+
+{showSuspendModal && (
+  <SuspendMosqueModal 
+    isOpen={showSuspendModal} 
+    onClose={() => setShowSuspendModal(false)}
+    mosque={activeMosque}
+    navigate={navigate}
+  />
+)}
+
+{/* Consolidated Moderation Area */}
+{isSuperAdmin && (
+  <div className="max-w-6xl mx-auto mt-12 mb-20 flex flex-col items-center gap-4">
+    
+    {/* 1. SUSPEND/UNSUSPEND TOGGLE */}
+    {activeMosque?.status !== 'pending' && (
+      <button 
+        onClick={() => setShowSuspendModal(true)} // Or call your new API route directly
+        className={`px-6 py-2 rounded-lg font-semibold transition-colors flex items-center gap-2 border ${
+          activeMosque?.status === 'suspended' 
+            ? 'border-emerald-600 text-emerald-700 hover:bg-emerald-50' 
+            : 'border-amber-600 text-amber-700 hover:bg-amber-50'
+        }`}
+      >
+        {activeMosque?.status === 'suspended' ? (
+          <><Check size={18} /> Verify (Unsuspend)</>
+        ) : (
+          <><Bell size={18} /> Suspend Mosque</>
+        )}
+      </button>
+    )}
+
+    {/* 2. DELETE ACTION */}
+    <button 
+      onClick={() => setShowDeleteModal(true)}
+      className="text-rose-600 border border-rose-600 px-6 py-2 rounded-lg font-semibold hover:bg-rose-50 transition-colors flex items-center gap-2"
+    >
+      <Trash2 size={18} /> Delete Mosque
+    </button>
+  </div>
+)}
     </div>
   );
 };

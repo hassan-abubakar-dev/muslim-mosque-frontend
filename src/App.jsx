@@ -24,7 +24,7 @@ import AboutPage from './pages/About';
 import FollowingPage from './pages/FollowingPage';
 import BookmarkPage from './pages/Bookmark';
 import VideoLibrary from './pages/VideoLibrary';
-import Settings from './pages/Settings';
+import Settings from '../src/pages/settings/Settings';
 import MosqueTeamSettings from './pages/MosqueTeamSettings';
 import SuperAdminDashboard from './pages/superAdmin/SuperAdmin';
 import ForgotPassword from './pages/ForgetPassword';

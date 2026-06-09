@@ -1,14 +1,16 @@
-// 📄 src/pages/Settings.jsx
+
 import React, { useState, useEffect } from 'react';
 import { User, ShieldCheck, KeyRound, Save, Loader2, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useUserContext } from '../context/UserContext.jsx';
-import privateAxiosInstance from '../../auth/privateAxiosInstance.js';
+import { useUserContext } from '../../context/UserContext.jsx';
+import privateAxiosInstance from '../../../auth/privateAxiosInstance.js';
+import DeleteUserModal from './DeleteUserModal.jsx';
 
 const Settings = () => {
   const navigate = useNavigate();
   const { loggedInUser, userProfile } = useUserContext();
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' or 'security'
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   
   // Profile form submission state tracker
   const [profileForm, setProfileForm] = useState({
@@ -324,11 +326,30 @@ const Settings = () => {
                   Update Credentials
                 </button>
               </div>
+
+
+              <div className="mt-10 pt-6 border-t-2 border-red-100 mb-6">
+           <h4 className="text-sm font-bold text-red-600 mb-2">Danger Zone</h4>
+           <p className="text-xs text-gray-500 mb-4">Deleting your account is permanent. All your data will be wiped.</p>
+           <button 
+             type="button"
+             onClick={() => setIsDeleteModalOpen(true)}
+             className="text-xs font-bold text-red-600 bg-red-50 px-4 py-4 rounded-lg hover:bg-red-100"
+           >
+             Delete My Account
+           </button>
+        </div>
             </form>
           )}
 
         </div>
       </div>
+
+      <DeleteUserModal 
+      isOpen={isDeleteModalOpen} 
+      onClose={() => setIsDeleteModalOpen(false)} 
+      userEmail={loggedInUser?.email} 
+    />
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { useUserContext } from '../context/UserContext';
 import privateAxiosInstance from '../../auth/privateAxiosInstance';
 import { useNavigate } from 'react-router-dom';
 import ProfileSkeleton from '../components/loadingSkeletons/ProfileSkeletonLoader';
+import { uploadImageToCloudinary } from '../util/cloudinary.js';
 
 const Profile = () => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -26,45 +27,35 @@ const Profile = () => {
   };
 
   // Handle API Upload
-  const handleUpload = async () => {
-    setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('image', selectedFile);
-      formData.append("file", selectedFile);
-  
-      formData.append(
-        "upload_preset",
-        import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
-      );
+ const handleUpload = async () => {
+  if (!selectedFile) return;
 
-      const res = await fetch(
-        `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        }
-      );
+  setUploading(true);
+  setError(null); // Clear previous errors
 
-      const data = await res.json();
-      const imageUrl = data.secure_url;
-      const publicId = data.public_id;
-      
-      const apiRes = await privateAxiosInstance.put('/profiles/update-user-profile', { imageUrl, publicId });
-      if(apiRes.status < 400){
-        console.log('Profile updated successfully', apiRes.data.userProfile);
-        setUserProfile(apiRes.data.userProfile); // Refresh profile data to show new image
-      }
-      
-      setUploading(false);
+  try {
+    // 1. Upload to Cloudinary
+    const { imageUrl, publicId } = await uploadImageToCloudinary(selectedFile);
+    
+    // 2. Update Database
+    const apiRes = await privateAxiosInstance.put('/profiles/update-user-profile', { 
+      imageUrl, 
+      publicId 
+    });
+
+    if (apiRes.status < 400) {
+      setUserProfile(apiRes.data.userProfile);
       setSelectedFile(null);
-
-    } catch (err) {
-      setUploading(false);
-      console.error('Upload error:', err.response?.data || err.message);
-      setError('upload fail')
+      // Optional: Success notification here
     }
-  };
+    
+  } catch (err) {
+    console.error('Upload error:', err.response?.data || err.message);
+    setError('Failed to update profile. Please try again.');
+  } finally {
+    setUploading(false); // ALWAYS runs, regardless of success or failure
+  }
+};
 
   // Determine if user is associated with any mosque hub records
   const isMosqueAdmin = loggedInUser?.managedMosques && loggedInUser?.managedMosques?.length > 0;
@@ -208,3 +199,5 @@ if(!loggedInUser){
 };
 
 export default Profile;
+
+

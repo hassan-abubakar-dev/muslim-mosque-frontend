@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { X, PhoneOutgoing, Send } from 'lucide-react';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance.js'
+import { uploadImageToCloudinary } from '../../util/cloudinary.js.js';
 
-const CreateAnnouncementModal = ({ isOpen, onClose, mosqueFromState, onCreated }) => {
+const CreateAnnouncementModal = ({ isOpen, onClose, mosque, onCreated }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [imageFile, setImageFile] = useState(null);
@@ -31,89 +32,59 @@ const CreateAnnouncementModal = ({ isOpen, onClose, mosqueFromState, onCreated }
 
   if (!isOpen) return null;
 
-  const uploadImageToCloudinary = async () => {
-    const formData = new FormData();
-    formData.append('file', imageFile);
-    formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET);
+ 
 
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
+ const handleSubmit = async () => {
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData?.error?.message || 'Cloudinary upload failed');
+  setError('');
+
+  if (!title.trim() || !content.trim()) {
+    setError('Title and content are required.');
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    // 2. Define variables outside so they are accessible by the 'body' object
+    let imageUrl = null;
+    let publicId = null;
+
+    if (imageFile) {
+    
+      // 3. Use your utility function with the correct argument (imageFile)
+      const result  = await uploadImageToCloudinary(imageFile);
+
+      imageUrl = result.imageUrl;
+      publicId = result.publicId;
     }
 
-    return await response.json();
-  };
+    const body = {
+      title: title.trim(),
+      content: content.trim(),
+      ...(imageUrl ? { imageUrl, publicId } : {}),
+    };
 
-  const handleSubmit = async () => {
-    setError('');
+    const url = mosque
+      ? `/announcements/create-announcement/${mosque.id}`
+      : '/announcements/create-announcement';
 
-    if (!title.trim() && !content.trim()) {
-      setError('Title and content are required.');
-      return;
-    }
+    const res = await privateAxiosInstance.post(url, body);
 
-    if(!title.trim()){
-      setError('Title is required.');
-      return;
-    }
-
-    if(!content.trim()){
-      setError('Content is required.');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      let imageUrl = null;
-      let imagePublicId = null;
-
-      if (imageFile) {
-        const uploadResult = await uploadImageToCloudinary();
-        imageUrl = uploadResult.secure_url;
-        imagePublicId = uploadResult.public_id;
-      }
-
-      const body = {
-        title: title.trim(),
-        content: content.trim(),
-        ...(imageUrl ? { imageUrl, imagePublicId } : {}),
-      };
-
-      // Update this endpoint as needed in your API
-      const url = mosqueFromState
-        ? `/announcements/create-announcement/${mosqueFromState.id}`
-        : '/announcements/create-announcement';
-
-      const res = await privateAxiosInstance.post(url, body);
-
-     if(res.status < 400) {
-      console.log('Announcement created successfully:', res.data);
-     } else {
-      console.error('Unexpected response:', res.data || res);
-      throw new Error('Failed to create announcement');
-     }
-
+    if (res.status < 400) {
       setTitle('');
       setContent('');
       setImageFile(null);
       setPreviewUrl(null);
       onCreated?.();
       onClose();
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Create announcement failed');
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (err) {
+    setError(err.response?.data?.message || err.message || 'Create announcement failed');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleFileChange = (event) => {
     const file = event.target.files[0];
