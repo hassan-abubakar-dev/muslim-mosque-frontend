@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 
 const ProfileMenu = () => {
-  const {setLoggedInUser, setLogOutError, showProfileMenu, setShowProfileMenu, loggedInUser, userProfile, fetchUserData} = useUserContext();
+  const {setLoggedInUser, setLogOutError, showProfileMenu, setShowProfileMenu, loggedInUser, userProfile} = useUserContext();
 const navigate = useNavigate();
 
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import privateAxiosInstance from "../../auth/privateAxiosInstance";
 import publicAxiosInstance from "../../auth/publicAxiosInstance";
 
@@ -61,10 +61,11 @@ const [isFetching, setIsFetching] = useState(false);
         const res = await privateAxiosInstance.get('/profiles/user-profile');
         if (res.status < 400) {
           setUserProfile(res.data.userProfile.image);
+          console.log('userProfile', res.data.userProfile.image)
         }
       } catch (err) {
         if (isDev) {
-          console.error('Failed to fetch user profile:', err.response?.data?.message || err.message);
+          // console.error('Failed to fetch user profile:', err.response?.data?.message || err.message);
         }
       } finally {
         setProfileLoading(false);
@@ -81,7 +82,7 @@ const [isFetching, setIsFetching] = useState(false);
         }
       } catch (err) {
         if (isDev) {
-          console.error('Failed to fetch followed mosques:', err.response?.data?.message || err.message);
+          console.error('Failed to fetch followed mosques:', err.response?.data || err.message);
         }
       }
     };
@@ -100,7 +101,7 @@ const fetchNotifications = async (page = 1, limit = 15, reset = false) => {
         
         if (res.status < 400) {
             const { notifications: newNotifs, totalItems } = res.data;
-           
+          //  console.log('notifications', notifications)
             
           
             setNotifications(prev => reset ? newNotifs : [...prev, ...newNotifs]);
@@ -117,10 +118,9 @@ const fetchNotifications = async (page = 1, limit = 15, reset = false) => {
 };
 
 
-
-
-
 const fetchMosques = async (page = 1, limit = 10, searchQuery = '', state = '', reset = false) => {
+  if (isFetching) return; 
+  
   setIsFetching(true);
   try {
     const res = await publicAxiosInstance.get('/mosques/get-mosques', {
@@ -129,18 +129,23 @@ const fetchMosques = async (page = 1, limit = 10, searchQuery = '', state = '', 
 
     if (res.status < 400) {
       const newMosques = res.data.mosques;
-      if (isDev) {
-        // console.log('mosques', res.data);
-      }
-      
-      // Update data: replace if reset=true, else append
-      setMosques(prev => reset ? newMosques : [...prev, ...newMosques]);
-      
-      // If we received fewer items than the limit, we've reached the end
+
+      setMosques(prev => {
+        if (reset) return newMosques;
+
+        // FILTERING LOGIC: 
+        // Only keep newMosques if their ID is not already in the 'prev' list
+        const existingIds = new Set(prev.map(m => m.id));
+        const filteredNewMosques = newMosques.filter(m => !existingIds.has(m.id));
+        
+        return [...prev, ...filteredNewMosques];
+      });
+
       setHasMore(newMosques.length === limit);
     }
   } catch (err) {
-    if (isDev) console.log(err);
+    if (isDev) console.error('fetchMosqueError', err);
+    setHasMore(false); 
   } finally {
     setIsFetching(false);
   }
@@ -169,35 +174,43 @@ const fetchFollowedMosqueIds = async () => {
 };
 
 
-    useEffect(() => {
-      const accessToken = localStorage.getItem('accessToken');
+// Add this inside your ContextProvider, above the useEffect
+const hasInitialized = useRef(false);
 
-      const fetchPrivateData = async () => {
-        const isLoggedIn = await fetchUserData();
-        if (isLoggedIn) {
-          await fetchUserProfile();
-          await fetchUserFollowedMosques();
-          await fetchFollowedMosqueIds();
-       
-          // other data that need login can be fetched here
+useEffect(() => {
+    const initAuth = async () => {
+        const token = localStorage.getItem('accessToken');
+        if (token && token !== 'null' && token !== 'undefined') {
+            try {
+                const isLoggedIn = await fetchUserData();
+                if (isLoggedIn) {
+                    await Promise.all([
+                        fetchUserProfile(),
+                        fetchUserFollowedMosques(),
+                        fetchFollowedMosqueIds()
+                    ]);
+                }
+            } catch (err) {
+                console.warn("Auth failed, user remains guest.");
+            }
         }
         setAuthLoading(false);
-      };
+    };
 
-      const fetchPublicData = async () => {
-        await fetchMosques(1, 20, '', '', true);
-      };
+    if (!hasInitialized.current) {
+        initAuth();
+    }
+}, []);
 
-      (async () => {
-        if (accessToken) {
-          await fetchPrivateData();
-        } else {
-          setAuthLoading(false);
-        }
+// 2. Hook for Public Content
+useEffect(() => {
+    // Only fetch if we haven't initialized yet
+    if (!hasInitialized.current) {
+        fetchMosques(1, 15, '', '', true);
+        hasInitialized.current = true; // Mark as done for both
+    }
+}, []);
 
-        await fetchPublicData();
-      })();
-    }, []);
 
   return (
     <UserContext.Provider value={{ 

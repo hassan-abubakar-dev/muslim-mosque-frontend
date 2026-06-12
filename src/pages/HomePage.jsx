@@ -53,27 +53,30 @@ const handleFollowMosque = async (e, mosque) => {
   }
 };
 
-  // remove Initial Fetch
 
 
-  // Load more
-  useEffect(() => {
-    if (page > 1) {
-      fetchMosques(page, 10, '', '', false);
-    }
-  }, [page]);
+// Load more using observer
+// Use a ref to track if this is the very first time the observer is running
+const isObserverReady = useRef(false);
 
-  // Observer
-  useEffect(() => {
+useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore && !isFetching) {
-        setPage((prev) => prev + 1);
-      }
+        // If the observer is just now being set up, ignore the first check
+        if (!isObserverReady.current) {
+            isObserverReady.current = true;
+            return;
+        }
+
+        if (entries[0].isIntersecting && hasMore && !isFetching) {
+            const nextPage = page + 1;
+            setPage(nextPage);
+            fetchMosques(nextPage, 10, '', '', false); 
+        }
     }, { threshold: 1.0 });
 
     if (observerTarget.current) observer.observe(observerTarget.current);
     return () => observer.disconnect();
-  }, [hasMore, isFetching]);
+}, [hasMore, isFetching, page]); 
 
   // Determine the title based on what the user is looking at
 const getPageTitle = () => {

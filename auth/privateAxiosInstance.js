@@ -36,6 +36,7 @@ privateAxiosInstance.interceptors.response.use(
                 if (res.status < 400) {
                     const newAccessToken = res.data.accessToken;
                     localStorage.setItem('accessToken', newAccessToken);
+                    console.log('request')
                     originalRequest._retry = true;
                     // Update header and retry original request
                     originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
@@ -47,8 +48,8 @@ privateAxiosInstance.interceptors.response.use(
                 }
                
                 localStorage.removeItem('accessToken');
-                originalRequest._retry = true;
-                // window.location.href =  '/login'; 
+                // originalRequest._retry = true;
+                // // window.location.href =  '/login'; 
                 return Promise.reject(err);
             }
         }

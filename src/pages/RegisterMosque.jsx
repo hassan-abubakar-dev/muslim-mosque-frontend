@@ -22,7 +22,7 @@ const RegisterMosque = () => {
 
   const isDev = import.meta.env.VITE_ENV === 'development';
 
-  const handleChange = (e) => { 
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((s) => ({ ...s, [name]: value }));
   };
@@ -30,7 +30,7 @@ const RegisterMosque = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAgreed) return;
-    
+
     setError('');
     setSuccess('');
     setLoading(true);
@@ -70,7 +70,12 @@ const RegisterMosque = () => {
         navigate(`/mosque/${mosque.id}`, { replace: true });
       }
     } catch (err) {
-      setError('Failed to register mosque. Please try again.');
+
+      if (err?.response?.data?.message === 'You have already registered a mosque with this name in this local government area.') {
+        setError('this mosque name already registered in this local government area.')
+      } else {
+        setError('Failed to register mosque. Please try again.');
+      }
       setLoading(false);
       if (isDev) console.error(err.response?.data);
     }
@@ -80,7 +85,7 @@ const RegisterMosque = () => {
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-6 mb-12">
       <div className="w-full max-w-md bg-white/95 rounded-xl shadow-lg p-6">
         <h1 className="text-2xl font-semibold text-emerald-800">Register a Mosque</h1>
-        
+
         <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
           {error && <div className="text-sm text-red-600 bg-red-50 p-2 rounded text-center">{error}</div>}
           {success && <div className="text-sm text-emerald-700 bg-emerald-50 p-2 rounded text-center">{success}</div>}
@@ -101,15 +106,15 @@ const RegisterMosque = () => {
             <span className="text-gray-700 text-sm">Local Government *</span>
             <input name="localGovernment" value={form.localGovernment} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm" placeholder="Nassarawa" />
           </label>
-          
+
           {/* 🆕 Added Description Field */}
           <label className="block">
             <span className="text-gray-700 text-sm">Description</span>
-            <textarea 
-              name="description" 
-              value={form.description} 
-              onChange={handleChange} 
-              className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm" 
+            <textarea
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-300 text-sm"
               placeholder="Tell us a little bit about the mosque..."
               rows={3}
             />
@@ -117,9 +122,9 @@ const RegisterMosque = () => {
 
           <div className="p-3 bg-blue-50/80 rounded-lg border border-blue-200 flex gap-2.5 items-start">
             <label className="flex items-start gap-2 cursor-pointer">
-              <input 
-                type="checkbox" 
-                checked={isAgreed} 
+              <input
+                type="checkbox"
+                checked={isAgreed}
                 onChange={() => setIsAgreed(!isAgreed)}
                 className="mt-1 accent-emerald-700"
               />

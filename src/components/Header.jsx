@@ -1,6 +1,6 @@
 import { MessageCircle, MoveLeft, Search, UserPlus, Bell, Menu, Bookmark, FileText, Library, X, Loader2 } from 'lucide-react';
 import AppLogo from '../assets/masjiba-logo-icon.png';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ProfileMenu from './ProfileMenu.jsx';
 import { useUserContext } from '../context/UserContext.jsx';
@@ -15,14 +15,17 @@ const Header = ({ onToggleSidebar }) => {
     const [selectedState, setSelectedState] = useState('');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
-   
+
+
+    const isDev = import.meta.env.VITE_ENV === 'development';
+
 
     const navigate = useNavigate();
     const location = useLocation();
     const currentMosqueId = location.pathname.split('/')[2] || null;
 
-    const { 
-        loggedInUser, profileLoading, userProfile, authLoading, 
+    const {
+        loggedInUser, profileLoading, userProfile, authLoading,
         logOutError, showProfileMenu, setShowProfileMenu, fetchMosques, isFetching, fetchNotifications, resetNotificationCount, notificationsCount, setNotificationsCount
     } = useUserContext();
 
@@ -42,41 +45,44 @@ const Header = ({ onToggleSidebar }) => {
     };
 
     useEffect(() => {
-        fetchUnreadNotificationsCount();
-    
-    }, []);
+        // ONLY fetch if we have a user
+        if (loggedInUser) {
+            fetchUnreadNotificationsCount();
+        }
+    }, [loggedInUser]); // Re-run only when loggedInUser changes
 
-useEffect(() => {
-    // 1. Logic for active searching (debounced)
-    if (query.trim().length > 1 || selectedState !== "") {
-        const delayDebounce = setTimeout(() => {
-            fetchMosques(1, 15, query, selectedState, true);
-        }, 600);
-        return () => clearTimeout(delayDebounce);
-    } 
-    
-    // 2. Logic for CLEARING search (immediate)
-    else if (query === "" && selectedState === "") {
-        // This fetches the default list (empty query, empty state)
-        fetchMosques(1, 15, '', '', true);
-    }
-}, [query, selectedState]);
+    // Add this at the top of your component
+    const isInitialMount = useRef(true);
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            return;
+        }
+
+        // Only handle active searching
+        if (query.trim().length > 1 || selectedState !== "") {
+            const delayDebounce = setTimeout(() => {
+                fetchMosques(1, 15, query, selectedState, true);
+            }, 600);
+            return () => clearTimeout(delayDebounce);
+        }
+    }, [query, selectedState]);
 
     return (
         <header className="bg-linear-to-r from-emerald-800 via-emerald-700 to-green-600 text-white shadow-md fixed top-0 left-0 right-0 h-24 flex items-center z-50">
             {logOutError && <Toast />}
-            <MobileMenu 
-                isOpen={mobileMenuOpen} 
-                onClose={() => setMobileMenuOpen(false)} 
+            <MobileMenu
+                isOpen={mobileMenuOpen}
+                onClose={() => setMobileMenuOpen(false)}
             />
             <div className='flex items-center justify-between px-4 w-full -mt-2'>
-                
+
                 {/* LEFT: Menu (Mobile), Logo, and Search Trigger */}
                 <div className={`flex items-center gap-2 ${showSearch ? 'hidden' : 'flex'}`}>
                     <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className='md:hidden p-2 rounded-full hover:bg-white/20' aria-label="Menu">
                         {mobileMenuOpen ? <X className='w-6 h-6' /> : <Menu className='w-6 h-6' />}
                     </button>
-                    
+
                     <button className='w-13 h-13 rounded-full focus:outline-none shrink-0' onClick={() => navigate('/')} aria-label="Home">
                         <img src={AppLogo} alt="App Logo" className='w-full h-full rounded-full' />
                     </button>
@@ -101,56 +107,56 @@ useEffect(() => {
                     </button>
 
                     <div className="relative">
-                     
-
-{loggedInUser && (
-    <button 
-        onClick={async () => {
-            if (!showNotifications) {
-                // 1. Fetch first page and reset the local notification list
-                await fetchNotifications(1, 15, true); 
-                
-                resetNotificationCount(); // 2. Clear the badge count immediately
-                // 3. Open the dropdown
-                setShowNotifications(true);
-            } else {
-                setShowNotifications(false);
-            }
-        }} 
-        className="relative p-2 rounded-full bg-white/20 hover:bg-white/30"
-    >
-        <Bell className="w-6 h-6" />
-        
-        {/* Badge visibility logic */}
-        {notificationsCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-[10px] font-bold px-1.5 rounded-full border-2 border-emerald-700">
-                {notificationsCount > 99 ? '99+' : notificationsCount}
-            </span>
-        )}
-    </button>
-)}
 
 
-                     {showNotifications && (
-    <NotificationsDropdown 
-        showNotifications={showNotifications} 
-        setShowNotifications={setShowNotifications} 
-        navigate={navigate} 
-        location={location} 
-        currentMosqueId={currentMosqueId} // Add this prop
-    />
-)}
+                        {loggedInUser && (
+                            <button
+                                onClick={async () => {
+                                    if (!showNotifications) {
+                                        // 1. Fetch first page and reset the local notification list
+                                        await fetchNotifications(1, 15, true);
+
+                                        resetNotificationCount(); // 2. Clear the badge count immediately
+                                        // 3. Open the dropdown
+                                        setShowNotifications(true);
+                                    } else {
+                                        setShowNotifications(false);
+                                    }
+                                }}
+                                className="relative p-2 rounded-full bg-white/20 hover:bg-white/30"
+                            >
+                                <Bell className="w-6 h-6" />
+
+                                {/* Badge visibility logic */}
+                                {notificationsCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-[10px] font-bold px-1.5 rounded-full border-2 border-emerald-700">
+                                        {notificationsCount > 99 ? '99+' : notificationsCount}
+                                    </span>
+                                )}
+                            </button>
+                        )}
+
+
+                        {showNotifications && (
+                            <NotificationsDropdown
+                                showNotifications={showNotifications}
+                                setShowNotifications={setShowNotifications}
+                                navigate={navigate}
+                                location={location}
+                                currentMosqueId={currentMosqueId} // Add this prop
+                            />
+                        )}
                     </div>
 
                     <div className='flex items-center'>
-                         {!loggedInUser && profileLoading === false && !authLoading && (
+                        {!loggedInUser && !profileLoading && !authLoading  &&(
                             <div className='flex items-center gap-2 '>
                                 <button onClick={() => { window.history.pushState({}, '', '/signup'); window.dispatchEvent(new PopStateEvent('popstate')); }} className='text-white/90 text-sm px-3 py-1 rounded-md border border-white/20 hover:bg-white/10 cursor-pointer text-nowrap'>Sign Up</button>
                                 <button onClick={() => { window.history.pushState({}, '', '/login'); window.dispatchEvent(new PopStateEvent('popstate')); }} className='bg-white text-emerald-700 px-3 py-1 rounded-md font-semibold cursor-pointer text-nowrap'>Log In</button>
                             </div>
                         )}
 
-                        {loggedInUser && profileLoading === false && !authLoading && (
+                        {loggedInUser && !profileLoading && !authLoading  && (
                             <div className='relative'>
                                 <img src={userProfile} alt="Profile" onClick={() => setShowProfileMenu(prev => !prev)} className='w-11 h-11 rounded-full border-2 border-white/50 object-cover cursor-pointer' />
                                 {showProfileMenu && <ProfileMenu />}
@@ -164,7 +170,14 @@ useEffect(() => {
             <div className={`fixed top-0 left-0 right-0 bg-white shadow-xl pb-4 px-4 ${!showSearch && 'hidden'} z-50 animate-in fade-in duration-300`}>
                 <div className='flex flex-col md:flex-row items-center gap-3 mt-4 max-w-6xl mx-auto'>
                     <div className='flex items-center gap-2 w-full'>
-                        <button className="bg-emerald-700 text-white p-3 rounded-full" onClick={() => { setShowSearch(false); setQuery(''); }}>
+                        <button className="bg-emerald-700 text-white p-3 rounded-full"
+                            onClick={() => {
+                                setShowSearch(false);
+                                setQuery('');
+                                setSelectedState('');
+                                fetchMosques(1, 15, '', '', true); // Reset to all mosques here!
+                            }}
+                        >
                             <MoveLeft className="w-5" />
                         </button>
                         <input value={query} onChange={(e) => setQuery(e.target.value)} className="h-12 w-full bg-gray-100 rounded-full px-6 outline-none text-gray-800" placeholder="Search by name..." autoFocus />
