@@ -6,6 +6,7 @@ import { useUserContext } from "../../context/UserContext";
  import { toggleMosqueFollow } from '../../util/follow.js';
 import MosqueProfileSkeleton from "../../components/loadingSkeletons/MosqueProfileSkeleton.jsx";
 import { uploadImageToCloudinary } from "../../util/cloudinary.js.js";
+import { compressImage } from "../../util/imageCompressor.js";
 
 const isDev = import.meta.env.VITE_ENV === 'development';
 
@@ -72,11 +73,17 @@ const handleFollowMosque = async (e, mosque) => {
     setUploading(true);
 
     try {
-      const { imageUrl, publicId } = await uploadImageToCloudinary(selectedImage);
+      const compressedFile = await compressImage(selectedImage);
+      const { imageUrl, publicId } = await uploadImageToCloudinary(compressedFile);
 
       const apiRes = await privateAxiosInstance.put(`/profiles/update-mosque-profile/${mosque.id}`, { 
         imageUrl, 
-        publicId 
+        publicId,
+        metadata: {
+        size: compressedFile.size, // In bytes
+        type: compressedFile.type, // e.g., 'image/webp'
+        lastModified: compressedFile.lastModified
+    }
       });
 
       if (apiRes.status < 400) {

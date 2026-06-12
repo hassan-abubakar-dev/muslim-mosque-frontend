@@ -5,6 +5,7 @@ import privateAxiosInstance from '../../auth/privateAxiosInstance';
 import { useNavigate } from 'react-router-dom';
 import ProfileSkeleton from '../components/loadingSkeletons/ProfileSkeletonLoader';
 import { uploadImageToCloudinary } from '../util/cloudinary.js';
+import { compressImage } from '../util/imageCompressor.js';
 
 const isDev = import.meta.env.VITE_ENV === 'development';
 
@@ -44,13 +45,20 @@ const Profile = () => {
   setError(null); // Clear previous errors
 
   try {
+// 1 compress file
+    const compressedFile = await compressImage(selectedFile);
     // 1. Upload to Cloudinary
-    const { imageUrl, publicId } = await uploadImageToCloudinary(selectedFile);
+    const { imageUrl, publicId } = await uploadImageToCloudinary(compressedFile);
     
     // 2. Update Database
     const apiRes = await privateAxiosInstance.put('/profiles/update-user-profile', { 
       imageUrl, 
-      publicId 
+      publicId,
+      metadata: {
+      size: compressedFile.size, // In bytes
+      type: compressedFile.type, // e.g., 'image/webp'
+      lastModified: compressedFile.lastModified
+    }
     });
 
     if (apiRes.status < 400) {
@@ -68,6 +76,8 @@ const Profile = () => {
     setUploading(false); // ALWAYS runs, regardless of success or failure
   }
 };
+
+
 
   // Determine if user is associated with any mosque hub records
   const isMosqueAdmin = loggedInUser?.managedMosques && loggedInUser?.managedMosques?.length > 0;

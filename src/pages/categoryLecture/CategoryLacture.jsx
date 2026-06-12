@@ -33,7 +33,7 @@ const CategoryLecture = () => {
       const res = await privateAxiosInstance.get(`/lectures/get-lecture-count/${cat.id}`);
       if (res.status < 400) {
         setLectureCount(res.data.count);
-        console.log("Lecture count fetched successfully:", res.data.count);
+        console.log("Lecture count fetched successfully:", res.data);
       }
     } catch (err) {
       console.error("Failed to fetch lecture count:", err);
@@ -139,6 +139,7 @@ const CategoryLecture = () => {
 
       if (res.status < 400) {
         const { lectures: newLectures, totalPages, currentPage } = res.data;
+        console.log(res.data);
 
         setLectures(prev => isReset ? newLectures : [...prev, ...newLectures]);
 

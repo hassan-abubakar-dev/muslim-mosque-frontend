@@ -1,5 +1,6 @@
 import axios from "axios";
 import publicAxiosInstance from "./publicAxiosInstance";
+import { setupErrorInterceptor } from "../api/client";
 
 const isDev = import.meta.env.VITE_ENV === 'development';
 
@@ -57,6 +58,8 @@ privateAxiosInstance.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+setupErrorInterceptor(privateAxiosInstance);
 
 export default privateAxiosInstance;
 

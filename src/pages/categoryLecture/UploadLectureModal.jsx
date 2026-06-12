@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance';
+import axios from 'axios';
 
 const isDev = import.meta.env.VITE_ENV === 'development';
 
@@ -13,9 +14,7 @@ const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLec
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  if (isDev) {
-    console.log('mosqueid', cat.mosqueId);
-  }
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     setError('');
@@ -90,91 +89,94 @@ const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLec
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-    if (loading) return;
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setSuccess('');
+  if (loading) return;
 
-    if (!title.trim()) {
-      setError('Please provide a title for the lecture.');
-      return;
+  // 1. Basic validation
+  if (!title.trim()) return setError('Please provide a title for the lecture.');
+  if (type === 'audio' && !file) return setError('Please select an audio file.');
+  if (type === 'video' && !videoId) return setError('Please provide a YouTube ID.');
+
+  // 2. Client-side size validation (100MB Limit)
+  if (type === 'audio' && file) {
+    const MAX_SIZE_MB = 100;
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      return setError(`File is too large (${(file.size / (1024 * 1024)).toFixed(0)}MB). Please upload a file under ${MAX_SIZE_MB}MB or use the YouTube option.`);
     }
+  }
 
-    if (type === 'audio' && !file) {
-      setError('Please select an audio file to upload.');
-      return;
-    }
+  setLoading(true);
 
-    if (type === 'video' && !videoId) {
-      setError('Please paste a valid YouTube link or video ID.');
-      return;
-    }
+  try {
+    if (type === 'audio') {
+      // 3. Get signed URL with original file metadata
+      const res1 = await privateAxiosInstance.post(`/signed-url/generate-upload-url`, {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size, 
+      });
 
-    setLoading(true);
+      const { uploadUrl, key } = res1.data;
+      const duration = await getFileDuration(file);
 
-    try {
-      if (type === 'audio') {
-        const res1 = await privateAxiosInstance.post(`/signed-url/generate-upload-url`, {
-          fileName: file.name,
-          fileType: file.type,
-        });
+      // 4. Direct Upload
+    const uploadRes = await axios.put(uploadUrl, file, {
+  headers: { 'Content-Type': file.type },
+  onUploadProgress: (progressEvent) => {
+    const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+    setProgress(percentCompleted);
+  },
+});
 
-        const { uploadUrl, key } = res1.data;
-        const duration = await getFileDuration(file);
+    // 2. You can still check the status if you want to be extra safe
+if (uploadRes.status !== 200) {
+  throw new Error('Audio upload failed');
+}
 
-        const uploadRes = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': file.type,
-          },
-          body: file,
-        });
-
-        if (!uploadRes.ok) {
-          setError('Audio upload failed. Please try again.');
-          return;
+      // 5. Save metadata
+      const audioRes = await privateAxiosInstance.post(`/lectures/save-metadata/${cat?.id}`, {
+        title,
+        type,
+        key,
+        duration,
+        mosqueId: cat?.mosqueId,
+        metadata: {
+          size: file.size,
+          type: file.type,
+          lastModified: file.lastModified
         }
+      });
 
-       const audioRes = await privateAxiosInstance.post(`/lectures/save-metadata/${cat?.id}`, {
-          title,
-          type,
-          key,
-          duration,
-          mosqueId: cat?.mosqueId,
-        });
-
-        setLectures(prev=> [{...audioRes.data.lecture}, ...prev])
-      } else {
-       const videoRes = await privateAxiosInstance.post(`/lectures/save-metadata/${cat?.id}`, {
-          title,
-          type,
-          thumbnail: thumbnailUrl,
-          videoId,
-          mosqueId: cat?.mosqueId,
-        });
-        console.log(videoRes)
-
-        setLectures(prev=> [ {...videoRes.data.lecture}, ...prev])
-      }
-
-      setSuccess('Lecture saved successfully.');
-      setTitle('');
-      setFile(null);
-      setVideoUrl('');
-      setVideoId('');
-      setThumbnailUrl('');
-      console.log('Lecture metadata saved successfully');
-      setShowUploadTypeModal(false);
-      // fetchLectures(); // Refresh the lectures list
-
-    } catch (err) {
-      console.error(err.response?.data || err.message);
-      setError('Save failed. Please try again.');
-    } finally {
-      setLoading(false);
+      setLectures(prev => [{...audioRes.data.lecture}, ...prev]);
+    } else {
+      // Video logic
+      const videoRes = await privateAxiosInstance.post(`/lectures/save-metadata/${cat?.id}`, {
+        title,
+        type,
+        thumbnail: thumbnailUrl,
+        videoId,
+        mosqueId: cat?.mosqueId,
+      });
+      setLectures(prev => [{...videoRes.data.lecture}, ...prev]);
     }
-  };
+
+    setSuccess('Lecture saved successfully.');
+    setTitle('');
+    setFile(null);
+    setVideoId('');
+    setShowUploadTypeModal(false);
+
+  } catch (err) {
+    console.error(err);
+    setError('Save failed. Please try again.');
+  } finally {
+    setLoading(false);
+    setProgress(0);
+  }
+};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 py-8">
@@ -191,7 +193,7 @@ const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLec
             </div>
             <button
               type="button"
-              onClick={() => setShowUploadTypeModal(false)}
+              onClick={() => {setShowUploadTypeModal(false); setFile(null)}}
               className="rounded-full bg-slate-100 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200"
             >
               Close
@@ -203,6 +205,16 @@ const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLec
             {error && <div className="rounded-2xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">{error}</div>}
             {success && <div className="rounded-2xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">{success}</div>}
 
+    {loading && type === 'audio' && (
+  <div className="w-full bg-slate-200 rounded-full h-2.5 mb-4">
+    <div 
+      className="bg-emerald-600 h-2.5 rounded-full transition-all duration-300" 
+      style={{ width: `${progress}%` }}
+    />
+    <p className="text-xs text-slate-500 mt-1">Uploading: {progress}%</p>
+  </div>
+)}
+ 
             <label className="grid gap-2 text-sm text-slate-700">
               <span className="font-medium">Lecture Title</span>
               <input
@@ -290,7 +302,7 @@ const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLec
             <div className="flex-shrink-0 flex flex-col gap-3 sm:flex-row sm:justify-end border-t border-slate-200 p-6 mt-auto -mx-6 -mb-6">
               <button
                 type="button"
-                onClick={() => setShowUploadTypeModal(false)}
+                onClick={() => {setShowUploadTypeModal(false); setFile(null)}}
                 className="rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
               >
                 Cancel

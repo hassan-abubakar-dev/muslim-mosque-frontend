@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 
 const ProfileMenu = () => {
-  const {setLoggedInUser, setLogOutError, showProfileMenu, setShowProfileMenu, loggedInUser, userProfile} = useUserContext();
+  const {setLoggedInUser, showProfileMenu, setShowProfileMenu, loggedInUser, userProfile} = useUserContext();
 const navigate = useNavigate();
 
 
@@ -27,10 +27,7 @@ const navigate = useNavigate();
        setShowProfileMenu(false);
       if(isDev){
         console.log(err.response.data);
-      }else{
-         setLogOutError(true);
       }
-     
     }finally {
     
       setShowProfileMenu(false);

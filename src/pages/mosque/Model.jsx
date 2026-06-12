@@ -56,10 +56,12 @@ const handleCreateCategory = async () => {
     // 1. Define variables in scope
     let imageUrl = null;
     let publicId = null;
+     let compressedFile = null;
 
     // 2. Upload to Cloudinary if a file exists
     if (uploadedFile) {
-      const result = await uploadImageToCloudinary(uploadedFile);
+      compressedFile = await compressImage(uploadedFile);
+      const result = await uploadImageToCloudinary(compressedFile);
       imageUrl = result.imageUrl;
       publicId = result.publicId;
       if (isDev) {
@@ -73,7 +75,12 @@ const handleCreateCategory = async () => {
       teacherName: newCategory?.teacherName,
       information: newCategory?.information,
       // Map to your new fields
-      ...(imageUrl ? { imageUrl, publicId } : {}),
+      ...(imageUrl ? { imageUrl, publicId,  
+        metadata: {
+        size: compressedFile.size, // In bytes
+        type: compressedFile.type, // e.g., 'image/webp'
+        lastModified: compressedFile.lastModified
+    } } : {}),
     };
 
     // 4. Send to backend
@@ -122,12 +129,20 @@ const handleUpdateCategory = async () => {
     // 1. Prepare values to be sent to backend
     let imageUrl = newCategory?.imageUrl || null; // Keep existing if no new one
     let publicId = newCategory?.publicId || null;
+    let compressedFile = null;
+    let metadata = null;
 
     // 2. Upload to Cloudinary ONLY if user selected a new image
     if (uploadedFile) {
-      const result = await uploadImageToCloudinary(uploadedFile);
+      compressedFile = await compressImage(uploadedFile);
+      const result = await uploadImageToCloudinary(compressedFile);
       imageUrl = result.imageUrl;
       publicId = result.publicId;
+       metadata = {
+        size: compressedFile.size, // In bytes
+        type: compressedFile.type, // e.g., 'image/webp'
+        lastModified: compressedFile.lastModified
+    }
     }
 
     // 3. Send updated data to backend
@@ -139,6 +154,7 @@ const handleUpdateCategory = async () => {
         information: newCategory?.information,
         imageUrl,    // Sending the new or existing URL
         publicId,    // Sending the new or existing publicId
+        metadata
       }
     );
 

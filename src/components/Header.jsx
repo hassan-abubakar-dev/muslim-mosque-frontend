@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import ProfileMenu from './ProfileMenu.jsx';
 import { useUserContext } from '../context/UserContext.jsx';
-import Toast from './Toast.jsx';
 import NotificationsDropdown from './NotificationsDropdown.jsx';
 import privateAxiosInstance from '../../auth/privateAxiosInstance.js';
 import MobileMenu from './MobileMenu.jsx';
@@ -25,8 +24,7 @@ const Header = ({ onToggleSidebar }) => {
     const currentMosqueId = location.pathname.split('/')[2] || null;
 
     const {
-        loggedInUser, profileLoading, userProfile, authLoading,
-        logOutError, showProfileMenu, setShowProfileMenu, fetchMosques, isFetching, fetchNotifications, resetNotificationCount, notificationsCount, setNotificationsCount
+        loggedInUser, profileLoading, userProfile, authLoading, showProfileMenu, setShowProfileMenu, fetchMosques, isFetching, fetchNotifications, resetNotificationCount, notificationsCount, setNotificationsCount
     } = useUserContext();
 
     const nigerianStates = ["Lagos", "Kano", "Kaduna", "Oyo", "Rivers", "FCT", "Borno", "Jigawa", "Plateau", "Enugu"];
@@ -70,7 +68,6 @@ const Header = ({ onToggleSidebar }) => {
 
     return (
         <header className="bg-linear-to-r from-emerald-800 via-emerald-700 to-green-600 text-white shadow-md fixed top-0 left-0 right-0 h-24 flex items-center z-50">
-            {logOutError && <Toast />}
             <MobileMenu
                 isOpen={mobileMenuOpen}
                 onClose={() => setMobileMenuOpen(false)}

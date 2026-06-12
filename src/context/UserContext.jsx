@@ -12,7 +12,6 @@ export const ContextProvider = ({ children}) => {
     const [userProfile, setUserProfile] = useState(null);
     const [appLoading, setAppLoading] = useState(false);
     const [authLoading, setAuthLoading] = useState(true);
-    const [logOutError, setLogOutError] = useState(false);
     const [followedMosques, setFollowedMosques] = useState([]);
    
       const [showProfileMenu, setShowProfileMenu] = useState(false);
@@ -215,7 +214,7 @@ useEffect(() => {
   return (
     <UserContext.Provider value={{ 
         loggedInUser, setLoggedInUser, fetchUserData, profileLoading, setProfileLoading, userProfile, fetchUserProfile,  appLoading,
-        authLoading, setAuthLoading, logOutError, setLogOutError, setUserProfile, followedMosques, setFollowedMosques, notifications, setNotifications, fetchNotifications, showProfileMenu,
+        authLoading, setAuthLoading, setUserProfile, followedMosques, setFollowedMosques, notifications, setNotifications, fetchNotifications, showProfileMenu,
          setShowProfileMenu, mosques, setMosques, fetchMosques, hasMore, isFetching,
           followMosqueIds, setFollowMosqueIds, fetchFollowedMosqueIds, notificationsCount, setNotificationsCount, resetNotificationCount, hasMoreNotifications,
            isFetchingNotifications, updateMosqueLocally

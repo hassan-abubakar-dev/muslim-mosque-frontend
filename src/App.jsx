@@ -1,5 +1,6 @@
 import './App.css'
 import { useState } from 'react';
+import 'react-toastify/dist/ReactToastify.css';
 import Homepage from './pages/HomePage'
 import RegisterMosque from './pages/RegisterMosque';
 import Signup from './pages/Signup'
@@ -29,6 +30,7 @@ import MosqueTeamSettings from './pages/MosqueTeamSettings';
 import SuperAdminDashboard from './pages/superAdmin/SuperAdmin';
 import ForgotPassword from './pages/ForgetPassword';
 import ResetPassword from './pages/ResetPassword';
+import { ToastContainer } from 'react-toastify';
 
 function App() {
   const {appLoading} = useUserContext();
@@ -83,6 +85,7 @@ function App() {
         </div>
       </div>
     </Router>
+    <ToastContainer position="top-right" autoClose={5000} style={{ zIndex: 9999 }} />
     </>
   )
   }

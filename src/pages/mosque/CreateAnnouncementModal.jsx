@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, PhoneOutgoing, Send } from 'lucide-react';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance.js'
 import { uploadImageToCloudinary } from '../../util/cloudinary.js.js';
+import { compressImage } from '../../util/imageCompressor.js';
 
 const CreateAnnouncementModal = ({ isOpen, onClose, mosque, onCreated }) => {
   const [title, setTitle] = useState('');
@@ -49,20 +50,29 @@ const CreateAnnouncementModal = ({ isOpen, onClose, mosque, onCreated }) => {
     // 2. Define variables outside so they are accessible by the 'body' object
     let imageUrl = null;
     let publicId = null;
+    let compressedFile = null;
 
     if (imageFile) {
-    
+      
+      
+      compressedFile = await compressImage(imageFile);
       // 3. Use your utility function with the correct argument (imageFile)
-      const result  = await uploadImageToCloudinary(imageFile);
+      const result  = await uploadImageToCloudinary(compressedFile);
 
       imageUrl = result.imageUrl;
       publicId = result.publicId;
     }
+    
 
     const body = {
       title: title.trim(),
       content: content.trim(),
-      ...(imageUrl ? { imageUrl, publicId } : {}),
+      ...(imageUrl ? { imageUrl, publicId, 
+        metadata: {
+        size: compressedFile.size, // In bytes
+        type: compressedFile.type, // e.g., 'image/webp'
+        lastModified: compressedFile.lastModified
+    } } : {}),
     };
 
     const url = mosque
