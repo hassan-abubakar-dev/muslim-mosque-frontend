@@ -2,7 +2,7 @@ import React from 'react';
 
 const VideoLibrarySkeleton = () => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-5">
       {[...Array(2)].map((_, i) => (
         <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 animate-pulse">
           {/* Thumbnail Skeleton */}

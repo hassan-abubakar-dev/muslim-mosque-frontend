@@ -75,8 +75,6 @@ const [isFetching, setIsFetching] = useState(false);
       try {
         const res = await privateAxiosInstance.get('/mosques/get-followed-mosques');
         if (res.status < 400) {
-          // Handle followed mosques data
-          // console.log('Fetched followed mosques:', res.data.mosques);
           setFollowedMosques(res.data.mosques);
         }
       } catch (err) {
@@ -185,7 +183,7 @@ useEffect(() => {
                 if (isLoggedIn) {
                     await Promise.all([
                         fetchUserProfile(),
-                        fetchUserFollowedMosques(),
+                        //remove followedMosques call
                         fetchFollowedMosqueIds()
                     ]);
                 }
@@ -217,7 +215,7 @@ useEffect(() => {
         authLoading, setAuthLoading, setUserProfile, followedMosques, setFollowedMosques, notifications, setNotifications, fetchNotifications, showProfileMenu,
          setShowProfileMenu, mosques, setMosques, fetchMosques, hasMore, isFetching,
           followMosqueIds, setFollowMosqueIds, fetchFollowedMosqueIds, notificationsCount, setNotificationsCount, resetNotificationCount, hasMoreNotifications,
-           isFetchingNotifications, updateMosqueLocally
+           isFetchingNotifications, updateMosqueLocally, fetchUserFollowedMosques
  }}>
       {children}
     </UserContext.Provider>

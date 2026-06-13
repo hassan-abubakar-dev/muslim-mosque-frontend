@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useUserContext } from '../context/UserContext';
 import { Loader2 } from 'lucide-react';
+import formatDate from '../util/formatDate';
 
 const NotificationsDropdown = ({
   showNotifications,
@@ -21,12 +22,6 @@ const NotificationsDropdown = ({
 
     if (!showNotifications) return null;
 
-    const formatDate = (iso) => {
-        try {
-            const d = new Date(iso);
-            return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-        } catch (e) { return ''; }
-    };
 
     const handleLoadMore = async () => {
         const nextPage = page + 1;

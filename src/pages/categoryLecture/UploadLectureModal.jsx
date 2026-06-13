@@ -4,7 +4,7 @@ import axios from 'axios';
 
 const isDev = import.meta.env.VITE_ENV === 'development';
 
-const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLectures }) => {
+const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLectures, setLectureCount }) => {
   const [title, setTitle] = useState('');
   const [type, setType] = useState('audio');
   const [file, setFile] = useState(null);
@@ -163,11 +163,13 @@ if (uploadRes.status !== 200) {
       setLectures(prev => [{...videoRes.data.lecture}, ...prev]);
     }
 
+    setLectureCount(prev => prev + 1);
     setSuccess('Lecture saved successfully.');
     setTitle('');
     setFile(null);
     setVideoId('');
     setShowUploadTypeModal(false);
+
 
   } catch (err) {
     console.error(err);

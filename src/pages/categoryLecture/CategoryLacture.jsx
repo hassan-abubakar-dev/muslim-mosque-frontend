@@ -116,70 +116,63 @@ const CategoryLecture = () => {
 
 
 
-  const fetchLectures = async (pageNum, isReset = false) => {
+const fetchLectures = useCallback(async (pageNum, isReset = false) => {
     if (!cat?.id) return;
     setLoading(true);
 
     try {
-      // 1. Prepare clean params
       const params = {
         page: pageNum,
-        limit: 10 // Use colon, not equals
+        limit: 15
       };
 
-      // 2. Only add these if they have meaningful values
-      if (search && search.trim() !== "") {
-        params.search = search.trim();
-      }
+      if (search && search.trim() !== "") params.search = search.trim();
+      if (activeTab !== "all") params.type = activeTab;
 
-      if (activeTab !== "all") {
-        params.type = activeTab;
-      }
-
-      // 3. Send request
       const res = await privateAxiosInstance.get(`/lectures/get-lectures/${cat.id}`, { params });
 
       if (res.status < 400) {
         const { lectures: newLectures, totalPages, currentPage } = res.data;
-        console.log(res.data);
-
         setLectures(prev => isReset ? newLectures : [...prev, ...newLectures]);
-
         setHasMore(currentPage < totalPages);
+        console.log(res.data)
       }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [cat?.id, search, activeTab]);
 
+  const isMounted = useRef(false)
   useEffect(() => {
     setSearch("");
     setActiveTab("all");
     setPage(1);
     fetchLectures(1, true);
-  }, [cat?.id]);
+
+    isMounted.current = true;
+  }, [cat?.id, fetchLectures]);
 
   // Fetch when page increments
-  useEffect(() => {
-    if (page > 1) fetchLectures(page, false);
-  }, [page])
+useEffect(() => {
+    // Skip if not mounted or page is still initial
+    if (!isMounted.current || page === 1) return; 
+    
+    fetchLectures(page, false);
+  }, [page]);
 
 
-  useEffect(() => {
+useEffect(() => {
+    if (!isMounted.current) return;
+    
+    const delayDebounce = setTimeout(() => {
+      fetchLectures(1, true);
+    }, 600);
+    
+    return () => clearTimeout(delayDebounce);
+  }, [activeTab, search]);
 
-    if (search.trim().length === 0 && search !== "") {
-    return; // Don't fetch for empty strings that were just spaces
-  }
-
-    if (search || activeTab !== "all") {
-      const delayDebounce = setTimeout(() => {
-        fetchLectures(1, true);
-      }, 600);
-      return () => clearTimeout(delayDebounce);
-    }
-  }, [activeTab, search]); //here i remove cat.id because it already in separate useEffect and it cause double request when we change category and search or tab at the same time. so now when we change category it will trigger first useEffect and set page to 1 and fetch lectures with new cat id, and when we change search or tab it will trigger second useEffect and fetch lectures with new search or tab and reset to page 1. this way we avoid double request and also make sure that we always fetch the correct lectures based on the current category, search and tab.
 
 if (loadingSkeleton) {
   return <CategoryHeaderSkeleton />;
@@ -209,6 +202,7 @@ if (loadingSkeleton) {
           cat={cat}
           fetchLectures={fetchLectures}
           setLectures={setLectures}
+          setLectureCount={setLectureCount}
         />
       )}
 

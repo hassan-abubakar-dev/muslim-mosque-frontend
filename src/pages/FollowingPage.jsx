@@ -1,16 +1,36 @@
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MosqueCard from '../components/MosqueCard';
 import { UserContext } from '../context/UserContext';
+import MosqueListSkeleton from '../components/loadingSkeletons/MosqueListSkeleton';
 
 const FollowingPage = () => {
   const navigate = useNavigate();
-  const { followedMosques, loggedInUser, followMosqueIds } = useContext(UserContext);
+  const [loading, setLoading] = useState(true);
+  const { followedMosques, loggedInUser, followMosqueIds, fetchUserFollowedMosques } = useContext(UserContext);
 
   const openMosque = (mosque) => {
     if (!mosque) return;
     navigate(`/mosque/${mosque.id}`, { state: { mosque } });
   };
+
+ useEffect(() => {
+    const loadFollowing = async () => {
+      // Only fetch if necessary
+      if (loggedInUser && followMosqueIds.length > 0 && followedMosques.length === 0) {
+        setLoading(true);
+        await fetchUserFollowedMosques();
+        setLoading(false);
+      } else {
+        setLoading(false); // Done loading immediately if no fetch needed
+      }
+    };
+    loadFollowing();
+  }, [loggedInUser, followMosqueIds]);
+
+  if(loading){
+    return <MosqueListSkeleton />
+  }
 
   return (
     <div className="min-h-screen pb-20">

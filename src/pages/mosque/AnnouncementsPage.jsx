@@ -9,6 +9,7 @@ import privateAxiosInstance from '../../../auth/privateAxiosInstance';
 import { UserContext } from '../../context/UserContext';
 import AnnouncementSkeleton from '../../components/loadingSkeletons/AnnouncementSkeleton';
 import MosqueProfileSkeleton from '../../components/loadingSkeletons/MosqueProfileSkeleton';
+import formatDate from '../../util/formatDate';
 
 const AnnouncementsPage = () => {
   const { id } = useParams();
@@ -28,12 +29,6 @@ const AnnouncementsPage = () => {
     () => mosques.find((m) => String(m.id) === String(id)) || null,
     [mosques, id]
   );
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString(undefined, { 
-      year: 'numeric', month: 'long', day: 'numeric' 
-    });
-  };
 
 const isSuperAdmin = loggedInUser?.role === 'superAdmin';
 

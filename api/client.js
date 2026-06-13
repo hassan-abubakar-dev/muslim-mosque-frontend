@@ -4,10 +4,18 @@ export const setupErrorInterceptor = (axiosInstance) => {
     axiosInstance.interceptors.response.use(
         (response) => response,
         (error) => {
+
+            if (error.code === 'ERR_CANCELED' || error.name === 'CanceledError') {
+                return Promise.reject(error); 
+            }
             // Handle Network Error
             if (!error.response) {
                 toast.error("Network error. Please check your internet connection.");
                 return Promise.reject(error);
+            }
+
+            if (error.code === 'ERR_CANCELED' || error.name === 'CanceledError') {
+                return Promise.reject(error); 
             }
 
             const { status, data } = error.response;

@@ -107,6 +107,28 @@ useEffect(() => {
     }
   };
 
+
+if (!lecture) {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+      <div className="text-center bg-white p-10 rounded-2xl shadow-sm border border-gray-100 max-w-sm">
+        <h2 className="text-2xl font-black text-gray-800">Lecture Not Found</h2>
+        <p className="text-gray-500 mt-2 mb-6 text-sm">
+          We couldn't retrieve the lecture details. Please go back and try again.
+        </p>
+        
+        {/* This takes them back to the previous page, whether it was the Library or the Lectures Feed */}
+        <button 
+          onClick={() => navigate(-1)} 
+          className="w-full bg-emerald-700 text-white font-bold py-3 rounded-xl hover:bg-emerald-800 transition cursor-pointer"
+        >
+          Go Back
+        </button>
+      </div>
+    </div>
+  );
+}
+
   return (
     <div className="min-h-screen bg-gray-100 p-6 pt-28 mb-10">
       <div className="max-w-4xl mx-auto bg-white rounded-lg p-6 shadow-sm">

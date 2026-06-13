@@ -4,13 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { Play, Trash2, Video, Search, ArrowLeft, Loader2 } from 'lucide-react';
 import privateAxiosInstance from '../../auth/privateAxiosInstance.js';
 import LibraryCardSkeleton from '../components/loadingSkeletons/LibraryCardSkeleton.jsx';
+import formatDate from '../util/formatDate.js';
 
 const VideoLibrary = () => {
   const navigate = useNavigate();
   const [libraryItems, setLibraryItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [loadingSkeleton, setLoadingSkeleton] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
   // Modal tracking state for explicit removal management
   const [videoToRemove, setVideoToRemove] = useState(null);
@@ -20,81 +23,100 @@ const VideoLibrary = () => {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const observer = useRef();
+  const abortControllerRef = useRef(null);
+  const debounceTimeoutRef = useRef(null);
+  const previousQueryRef = useRef('');
 
-  // 2. The Observer logic
-  const lastLectureElementRef = useCallback((node) => {
-    // If we are currently loading or don't have more, do nothing
-    if (isLoading) return;
-    
-    if (observer.current) observer.current.disconnect();
-    
-    observer.current = new IntersectionObserver(entries => {
-      // If the node is visible and we have more pages, increment page
-      if (entries[0].isIntersecting && hasMore) {
-        setPage(prev => prev + 1);
-      }
-    });
-    
-    if (node) observer.current.observe(node);
-  }, [isLoading, hasMore]);
+// Use a stable reference for the callback so it doesn't re-trigger on state changes
+const lastLectureElementRef = useCallback((node) => {
+  if (observer.current) observer.current.disconnect();
 
-  // Fetch saved video rows on mount
- const fetchLibrary = async (pageNum, isReset = false) => {
-    try {
-      setIsLoading(true);
-      
-      const res = await privateAxiosInstance.get('/video-library/get-library', {
-        params: { 
-          page: pageNum, 
-          search: searchQuery.trim(),
-          limit: 12 
-        }
+  observer.current = new IntersectionObserver(entries => {
+    // Check current state values inside the callback via logic
+    if (entries[0].isIntersecting) {
+      // Use a functional update to avoid needing 'page' in the dependency array
+      setPage(prev => {
+       
+        return prev + 1;
       });
-
-      if (res.status < 400) {
-        const newItems = res.data.library;
-        
-        // Use the caller's explicit command (isReset)
-        setLibraryItems(prev => isReset ? newItems : [...prev, ...newItems]);
-        
-        // Update hasMore based on whether we received data (or compare with totalPages if your API provides it)
-        setHasMore(newItems.length > 0); 
-      }
-    } catch (err) {
-      if (isDev) {
-        console.error("Failed fetching library:", err);
-      }
-    } finally {
-      setIsLoading(false);
-      setLoadingSkeleton(false);
     }
-  };
+  }, { rootMargin: '200px' });
 
-  useEffect(() => {
-    fetchLibrary(1, true); // Initial load with reset = true
-  }, []);
+  if (node) observer.current.observe(node);
+}, []); // <--- EMPTY DEPENDENCIES: This will never change
 
-  // 1. Pagination Trigger (Append data)
+  // Debounce the search query before requesting new results
   useEffect(() => {
-    if (page > 1) {
-      fetchLibrary(page, false); 
+    clearTimeout(debounceTimeoutRef.current);
+
+    debounceTimeoutRef.current = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 600);
+
+    return () => clearTimeout(debounceTimeoutRef.current);
+  }, [searchQuery]);
+
+  // Fetch library on mount, search change, or page change
+  useEffect(() => {
+    if (previousQueryRef.current !== debouncedSearchQuery && page !== 1) {
+      previousQueryRef.current = debouncedSearchQuery;
+      setPage(1);
+      setHasMore(true);
+      return;
     }
-  }, [page]);
 
-  // 2. SearchTrigger (Reset data)
-useEffect(() => {
-  if (searchQuery.trim() === "") {
-    // Optionally: reset to the full list if the query was cleared
-    fetchLibrary(1, true);
-    return;
-  }
+    previousQueryRef.current = debouncedSearchQuery;
 
-  const delayDebounce = setTimeout(() => {
-    fetchLibrary(1, true);
-  }, 600);
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    const loadLibrary = async () => {
+      if (!hasMore) return;
+      try {
+        setIsLoading(true);
+
+        const res = await privateAxiosInstance.get('/video-library/get-library', {
+          params: {
+            page,
+            search: debouncedSearchQuery,
+            limit: 12,
+          },
+          signal: controller.signal,
+        });
+
+        console.log(res.data)
+
+        if (res.status < 400) {
+  const { library, hasMore: serverHasMore, totalResults } = res.data;
   
-  return () => clearTimeout(delayDebounce);
-}, [searchQuery]);;
+  setLibraryItems(prev => (page === 1 ? library : [...prev, ...library]));
+  
+  setHasMore(serverHasMore); 
+  setTotalCount(totalResults);
+}
+      } catch (err) {
+      if (err?.name === 'CanceledError' || err?.code === 'ERR_CANCELED') {
+    return; 
+  }
+        if (isDev) {
+          console.error('Failed fetching library:', err);
+        }
+      } finally {
+        setIsLoading(false);
+        setLoadingSkeleton(false);
+      }
+    };
+
+    loadLibrary();
+
+    return () => {
+      controller.abort();
+    };
+  }, [page, debouncedSearchQuery]);
 
 
   // Handle explicit delete via our custom DELETE route
@@ -137,7 +159,7 @@ return (
             <div>
               <h1 className="text-2xl font-black text-gray-900 tracking-tight">My Video Library</h1>
               <p className="text-sm text-gray-500 font-medium">
-                {libraryItems.length} {libraryItems.length === 1 ? 'lecture' : 'lectures'} securely cached in cloud storage
+                {totalCount} {totalCount === 1 ? 'lecture' : 'lectures'} securely cached in cloud storage
               </p>
             </div>
           </div>
@@ -211,7 +233,7 @@ return (
                   </div>
                   <div className="p-4 flex flex-col flex-1 justify-between gap-3">
                     <div>
-                      <h4 className="font-bold text-gray-900 text-base leading-snug">{lec.title || "Untitled Lecture"}</h4>
+                      <h4 className="font-bold text-gray-900 text-base leading-snug text-nowrap">{lec.title || "Untitled Lecture"}</h4>
                       <div className="mt-2">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-nowrap text-emerald-700 bg-emerald-50 px-2 py-1 rounded-full border border-emerald-100">
                           {lec?.mosqueName || "Unnamed Mosque"}
@@ -220,7 +242,7 @@ return (
                     </div>
                     <div className="flex items-center justify-between border-t border-gray-100 pt-3 mt-1">
                       <span className="text-[11px] text-gray-400 font-medium text-nowrap">
-                        Added {new Date(lec.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                        Added {formatDate(lec.addedToLibraryAt)}
                       </span>
                       <button title="Remove" onClick={(e) => { e.stopPropagation(); setVideoToRemove(lec); }} className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer ml-10">
                         <Trash2 className="w-4 h-4" />
@@ -238,9 +260,10 @@ return (
   </div>
 );
             })}
-            {isLoading && <LibraryCardSkeleton />}
+            
           </div>
         )}
+        {isLoading && <LibraryCardSkeleton />}
 
         {/* 🌟 4. Action Confirmation Safety Modal */}
         {videoToRemove && (

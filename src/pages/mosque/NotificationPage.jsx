@@ -3,6 +3,7 @@ import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useUserContext } from '../../context/UserContext';
 import MosqueProfile from './MosqueProfile';
 import { Loader2 } from 'lucide-react';
+import formatDate from '../../util/formatDate';
 
 const NotificationPage = () => {
   const { id } = useParams();
@@ -52,12 +53,6 @@ const NotificationPage = () => {
     return () => observer.disconnect();
   }, [hasMoreNotifications, isFetchingNotifications, page]);
 
-  const formatDate = (iso) => {
-    try {
-      const d = new Date(iso);
-      return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-    } catch (e) { return ''; }
-  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">

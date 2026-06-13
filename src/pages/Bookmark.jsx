@@ -59,6 +59,7 @@ const BookmarkPage = () => {
       if (res.status < 400) {
         const newBookmarks = res.data.data.bookmarks;
         const { totalPages, currentPage } = res.data;
+      
 
         setBookmarks(prev => isReset ? newBookmarks : [...prev, ...newBookmarks]);
         setHasMore(currentPage < totalPages);
