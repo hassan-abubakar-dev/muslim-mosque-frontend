@@ -86,7 +86,9 @@ const CategoryLecture = () => {
 
   const handleDeleteLecture = async (lectureId) => {
     try {
-      const res = await privateAxiosInstance.delete(`/lectures/delete-lecture/${lectureId}`);
+      const res = await privateAxiosInstance.delete(`/lectures/delete-lecture/${lectureId}`, {
+        params: { categoryId: cat.id }
+      });
       if (res.status < 400) {
         // remove from local state
         setLectures(prev => prev.filter(l => l.id !== lectureId));
