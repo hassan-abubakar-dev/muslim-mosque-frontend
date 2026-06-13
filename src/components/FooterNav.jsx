@@ -1,4 +1,4 @@
-import { Home, Book, Moon, Clock, Heart } from 'lucide-react';
+import { Home, Book, Moon, Clock, Heart, Library, BookPlus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import MosqueImage from '../assets/default_mosque.webp'
 
@@ -11,7 +11,7 @@ const FooterNav = () => {
     { id: 'following', label: 'Following', image: MosqueImage, type: 'image', route: '/following' },
     { id: 'quran', label: 'Qur\'an', icon: Book, type: 'icon', route: '/quran' },
     { id: 'adhkar', label: 'Adhkar', icon: Moon, type: 'icon', route: '/adhkar' },
-    { id: 'prayer', label: 'library', icon: Clock, type: 'icon', route: '/video-library' },
+    { id: 'prayer', label: 'library', icon: BookPlus, type: 'icon', route: '/video-library' },
 
   ];
 

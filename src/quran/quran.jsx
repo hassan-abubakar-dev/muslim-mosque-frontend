@@ -36,13 +36,15 @@ export default function Qiuran() {
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white pb-24 ">
       <div className="max-w-xl mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold text-center mb-6 text-emerald-700">قائمة السور</h1>
-        <input
-          type="text"
-          placeholder="ابحث عن سورة..."
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          className="w-full mb-6 px-4 py-2 rounded-lg border border-emerald-200 focus:ring-2 focus:ring-emerald-400"
-        />
+        <div className="sticky top-24 z-20 bg-emerald-50/95 backdrop-blur-md -mx-4 px-4 pb-4 pt-4 mb-6 border-b border-emerald-200">
+          <input
+            type="text"
+            placeholder="ابحث عن سورة..."
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            className="w-full px-4 py-2 rounded-lg border border-emerald-200 bg-white focus:ring-2 focus:ring-emerald-400"
+          />
+        </div>
         {loading && <div className="text-center text-gray-500 py-8">جاري التحميل...</div>}
         {error && <div className="text-center text-red-500 py-8">{error}</div>}
         <div className="space-y-3">

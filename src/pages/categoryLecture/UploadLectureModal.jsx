@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance';
 import axios from 'axios';
+import { usePreventLeave } from '../../util/usePreventLeave';
 
 const isDev = import.meta.env.VITE_ENV === 'development';
 
@@ -44,16 +45,7 @@ const UploadLectureModal = ({ setShowUploadTypeModal, cat, fetchLectures, setLec
     }
   }, [videoUrl]);
 
-  useEffect(() => {
-  const handleBeforeUnload = (e) => {
-    if (loading) {
-      e.preventDefault();
-      e.returnValue = "Upload in progress. Are you sure you want to leave?";
-    }
-  };
-  window.addEventListener("beforeunload", handleBeforeUnload);
-  return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-}, [loading]);
+usePreventLeave(loading);
 
   const handleTypeChange = (selectedType) => {
     setType(selectedType);

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { X, PhoneOutgoing, Send } from 'lucide-react';
+import { X, PhoneOutgoing, Send, Camera } from 'lucide-react';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance.js'
 import { uploadImageToCloudinary } from '../../util/cloudinary.js.js';
 import { compressImage } from '../../util/imageCompressor.js';
+import { usePreventLeave } from '../../util/usePreventLeave.js';
 
 const CreateAnnouncementModal = ({ isOpen, onClose, mosque, onCreated }) => {
   const [title, setTitle] = useState('');
@@ -11,6 +12,9 @@ const CreateAnnouncementModal = ({ isOpen, onClose, mosque, onCreated }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+
+  usePreventLeave(loading);
 
   useEffect(() => {
     if (!isOpen) {
@@ -145,7 +149,7 @@ const CreateAnnouncementModal = ({ isOpen, onClose, mosque, onCreated }) => {
             <div>
               <label className="block text-sm font-medium text-gray-700">Image (optional)</label>
               <div className="mt-2 flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
-                <PhoneOutgoing className="text-emerald-600" />
+                <Camera className="text-emerald-600" />
                 <span className="text-sm text-gray-600">Upload an image if you want to attach one.</span>
               </div>
               <input

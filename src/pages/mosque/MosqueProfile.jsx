@@ -7,6 +7,7 @@ import { useUserContext } from "../../context/UserContext";
 import MosqueProfileSkeleton from "../../components/loadingSkeletons/MosqueProfileSkeleton.jsx";
 import { uploadImageToCloudinary } from "../../util/cloudinary.js.js";
 import { compressImage } from "../../util/imageCompressor.js";
+import { usePreventLeave } from "../../util/usePreventLeave.js";
 
 const isDev = import.meta.env.VITE_ENV === 'development';
 
@@ -30,7 +31,7 @@ useEffect(() => {
   setOriginalImage(mosque?.mosqueProfile?.image);
 }, [mosque?.mosqueProfile?.image]);
 
-
+usePreventLeave(uploading);
 
 useEffect(() => {
   if(mosque) {

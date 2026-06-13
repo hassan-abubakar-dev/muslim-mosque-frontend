@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { MoreVertical, Pencil, Trash2, Flag, X, Check, Bell } from 'lucide-react';
 import MosqueLoadingSkeleton from '../../components/loadingSkeletons/MosqueLoadingSkeleton';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance';
-import Toast from '../../components/Toast';
 import MosqueProfile from './MosqueProfile';
 import Model from './Model';
 import AnnouncementModal from './AnnouncementModal';
@@ -27,11 +26,11 @@ const Mosque = () => {
   const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
   const [openReportModel, setOpenReportModel] = useState(false);
   const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
-  const [Error, setError] = useState(false);
   const [categories, setCategories] = useState([]);
   const [openMenuId, setOpenMenuId] = useState(false);
   const [isEdit, setIsEdit] = useState(false);
-  const [newCategory, setNewCategory] = useState({ name: 'Quran', information: '', teacherName: '' });
+  const initialCategory = { name: 'Quran', information: '', teacherName: '' };
+  const [newCategory, setNewCategory] = useState(initialCategory);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
@@ -133,7 +132,6 @@ if (!activeMosque) return <div className="p-20 text-center">Mosque not found.</d
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      {Error && <Toast />}
 
       {/* Login Toast Notification */}
       {toastMessage && (
@@ -200,11 +198,11 @@ if (!activeMosque) return <div className="p-20 text-center">Mosque not found.</d
         </div>
 
         {isOwner && (
-          <button className="bg-emerald-700 text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-emerald-800 md:mr-10" onClick={() => { setShowModal(true); setIsEdit(false); }}>+ <span className='hidden md:inline '>Create</span> Category</button>
+          <button className="bg-emerald-700 text-white px-5 py-2 rounded-lg font-bold text-sm hover:bg-emerald-800 md:mr-10" onClick={() => { setShowModal(true); setIsEdit(false); setNewCategory(initialCategory); }}>+ <span className='hidden md:inline '>Create</span> Category</button>
         )}
       </div>
 
-      {showModal && <Model newCategory={newCategory} setNewCategory={setNewCategory} setShowModal={setShowModal} isEdit={isEdit} setError={setError} activeMosque={activeMosque} fetchAllCategories={fetchAllCategories} />}
+      {showModal && <Model newCategory={newCategory} setNewCategory={setNewCategory} setShowModal={setShowModal} isEdit={isEdit} initialCategory={initialCategory} activeMosque={activeMosque} fetchAllCategories={fetchAllCategories} />}
       {showCreateAnnouncementModal && <CreateAnnouncementModal isOpen={showCreateAnnouncementModal} onClose={() => setShowCreateAnnouncementModal(false)} mosque={activeMosque} onCreated={() => setShowCreateAnnouncementModal(false)} />}
       {openReportModel && <ReportCard mosqueId={activeMosque.id} mosqueName={activeMosque.name} onClose={() => setOpenReportModel(false)} />}
       <AnnouncementModal announcement={selectedAnnouncement} isOpen={!!selectedAnnouncement} onClose={() => setSelectedAnnouncement(null)} />

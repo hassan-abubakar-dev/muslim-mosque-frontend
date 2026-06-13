@@ -2,7 +2,6 @@ import { useState } from 'react';
 import publicAxiosInstance from '../../auth/publicAxiosInstance';
 import { useNavigate } from 'react-router-dom';
 import { useUserContext } from '../context/UserContext';
-import Toast from '../components/Toast';
 import MasjibaLogoMark from '../assets/masjiba-logo-mark.png';
 import PasswordInput from '../components/PasswordInput';
 
@@ -13,7 +12,6 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const {fetchUserProfile, setLoggedInUser, fetchUserData} = useUserContext();
-  const [networkError, setNotworkError] = useState(false);
     const isDev = import.meta.env.VITE_ENV === 'development';
 
   const handleChange = (e) => {
@@ -86,8 +84,6 @@ const Login = () => {
           Enter your credentials to access your account.
         </p>
       </div>
-
-      {networkError && <Toast />}
 
       {/* INTERACTIVE INPUT FORM */}
       <form className="mt-5 space-y-4" onSubmit={handleSubmit}>

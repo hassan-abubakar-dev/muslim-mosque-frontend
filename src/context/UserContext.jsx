@@ -60,7 +60,6 @@ const [isFetching, setIsFetching] = useState(false);
         const res = await privateAxiosInstance.get('/profiles/user-profile');
         if (res.status < 400) {
           setUserProfile(res.data.userProfile.image);
-          console.log('userProfile', res.data.userProfile.image)
         }
       } catch (err) {
         if (isDev) {

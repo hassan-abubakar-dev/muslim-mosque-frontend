@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import ProfileSkeleton from '../components/loadingSkeletons/ProfileSkeletonLoader';
 import { uploadImageToCloudinary } from '../util/cloudinary.js';
 import { compressImage } from '../util/imageCompressor.js';
+import { usePreventLeave } from '../util/usePreventLeave.js';
 
 const isDev = import.meta.env.VITE_ENV === 'development';
 
@@ -19,7 +20,7 @@ const Profile = () => {
   const navigate = useNavigate();
 
   
-
+usePreventLeave(uploading);
   // Handle file selection
   const handleFileChange = (e) => {
     const file = e.target.files[0];

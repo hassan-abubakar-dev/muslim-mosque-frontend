@@ -1,18 +1,22 @@
 import { useState } from "react";
 import privateAxiosInstance from "../../../auth/privateAxiosInstance";
 import { uploadImageToCloudinary } from "../../util/cloudinary.js";
+import { usePreventLeave } from "../../util/usePreventLeave.js";
+import { compressImage } from "../../util/imageCompressor.js";
+// import { compressImage } from "../../util/imageCompressor.js";
 
 
-const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCategory, setError, activeMosque, fetchAllCategories }) => {
+const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCategory, activeMosque, fetchAllCategories }) => {
 
     const isDev = import.meta.env.VITE_ENV === 'development'
-
     const [loading, setLoading] = useState(false);
     const [createCategoryError, setCreateCategoryError] = useState('');
 
     const validate = () => {
     // 1. Determine the name to check
-    const nameToCheck = newCategory?.name === "Other" ? newCategory?.customName : newCategory?.name;
+    const nameToCheck = newCategory?.name === "Other"
+      ? newCategory?.customName
+      : newCategory?.name || initialCategory?.name;
 
     // 2. Check for required fields
     if (!nameToCheck || nameToCheck.trim() === "") {
@@ -43,6 +47,8 @@ const Model = ({ newCategory, setNewCategory, setShowModal, isEdit, initialCateg
 
     const [uploadedFile, setUploadedFile] = useState(null);
 
+    usePreventLeave(loading);
+
    
 
 const handleCreateCategory = async () => {
@@ -64,9 +70,7 @@ const handleCreateCategory = async () => {
       const result = await uploadImageToCloudinary(compressedFile);
       imageUrl = result.imageUrl;
       publicId = result.publicId;
-      if (isDev) {
-        console.log('publicId, imageUrl', publicId, imageUrl);
-      }
+
     }
 
     // 3. Prepare body with Cloudinary data
@@ -108,8 +112,7 @@ const handleCreateCategory = async () => {
     } else if (err.response?.data?.message === "Category with this name and teacher already exists") {
       setCreateCategoryError("Category with this name and teacher already exists");
     } else {
-      setShowModal(false);
-      setError(true);
+      setCreateCategoryError('Unable to create category. Please try again.');
     }
     if (isDev) {
       console.error(err.response?.data || err.message);
@@ -168,16 +171,14 @@ const handleUpdateCategory = async () => {
      
     }
   } catch (err) {
-     if (isDev) {
-       console.log(err.response.data || err);
-     }
+    
     setLoading(false);
     if (isDev) console.log(err.response?.data || err.message);
 
     if (err.response?.data?.message === "Category with this name and teacher already exists") {
       setCreateCategoryError("Category with this name and teacher already exists");
     } else {
-      setError(true);
+      setCreateCategoryError('Unable to update category. Please try again.');
     }
   } finally {
     setLoading(false);

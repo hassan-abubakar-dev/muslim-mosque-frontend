@@ -44,6 +44,7 @@ const pageRef = useRef(1);
           ? versesRes.data.data.verses
           : []
       );
+
     } catch (err) {
       if (isDev) {
         console.error(err.response?.data || err.message);
@@ -141,12 +142,14 @@ useEffect(() => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white pb-24 pt-20">
       <div className="max-w-xl mx-auto px-4 py-6">
-        <button
-          onClick={() => navigate(-1)}
-          className="mb-6 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
-        >
-          رجوع
-        </button>
+        <div className="sticky top-24 z-30 bg-emerald-50/95 backdrop-blur-md -mx-4 px-4 pb-3 pt-4 mb-6 border-b border-emerald-200">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
+          >
+            رجوع
+          </button>
+        </div>
         <div className="bg-white p-6 rounded-3xl shadow-lg border border-emerald-100 mb-6 text-right">
           <h1 className="text-3xl font-bold text-emerald-700 mb-2">{surah.name}</h1>
           <p className="text-gray-600 mb-2">{surah.transliteration}</p>

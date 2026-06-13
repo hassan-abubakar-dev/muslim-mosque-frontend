@@ -33,7 +33,6 @@ const CategoryLecture = () => {
       const res = await privateAxiosInstance.get(`/lectures/get-lecture-count/${cat.id}`);
       if (res.status < 400) {
         setLectureCount(res.data.count);
-        console.log("Lecture count fetched successfully:", res.data);
       }
     } catch (err) {
       console.error("Failed to fetch lecture count:", err);
@@ -93,7 +92,6 @@ const CategoryLecture = () => {
         // remove from local state
         setLectures(prev => prev.filter(l => l.id !== lectureId));
         setLectureToDelete(null);
-        console.log('Lecture deleted successfully', res.data);
       }
     } catch (err) {
       console.error(err.response?.data || err.message);
@@ -135,7 +133,6 @@ const fetchLectures = useCallback(async (pageNum, isReset = false) => {
         const { lectures: newLectures, totalPages, currentPage } = res.data;
         setLectures(prev => isReset ? newLectures : [...prev, ...newLectures]);
         setHasMore(currentPage < totalPages);
-        console.log(res.data)
       }
     } catch (err) {
       console.error(err);

@@ -1,4 +1,4 @@
-import { Bookmark, FileText, Library, X } from 'lucide-react';
+import { Bookmark, BookmarkPlus, FileText, Library, X } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -8,7 +8,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     const navItems = [
         { icon: Bookmark, label: 'Bookmarks', path: '/bookmarks' },
         { icon: FileText, label: 'Reports', path: '/reports' },
-        { icon: Library, label: 'Video Library', path: '/video-library' },
+        { icon: BookmarkPlus, label: 'Video Library', path: '/video-library' },
     ];
 
     const isActive = (path) => location.pathname === path;

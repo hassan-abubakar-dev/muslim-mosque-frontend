@@ -10,13 +10,13 @@ export const lectureUtils = {
     try {
       const res = await privateAxiosInstance.post(`/bookmarks/toggle/${lectureId}`, { lastPosition });
       if (isDev) {
-        console.log("Saving bookmark for lecture:", lectureId, "at position:", lastPosition);
+        // console.log("Saving bookmark for lecture:", lectureId, "at position:", lastPosition);
       }
    
       return res.data;
     } catch (err) {
       if (isDev) {
-        console.error("Bookmark API error:", err.response?.data || err.message);
+        // console.error("Bookmark API error:", err.response?.data || err.message);
       }
       throw err;
     }
