@@ -9,6 +9,8 @@ const SelectedMosqueModel = ({
 
 const isSuspended = selectedMosque.status === 'suspended';
 
+ const isDev = import.meta.env.VITE_ENV === 'development';
+
    
 const handleAction = async (id) => {
         try {
@@ -28,7 +30,9 @@ const handleAction = async (id) => {
             }
             setSelectedMosque(null);
         } catch (err) {
-            console.error("Action failed", err);
+            if(isDev){
+                console.error("Action failed", err?.response?.data || err);
+            }
         }
     };
 

@@ -65,10 +65,11 @@ const Settings = () => {
       });
       if (res.data?.status === 'success' || res.status < 400) {
         setMessage({ type: 'success', text: 'Profile changes updated successfully!' });
-        console.log('Profile updated successfully:', res.data);
       }
     } catch (err) {
-      console.error('Profile update error:', err.response?.data || err.message);
+      if(isDev){
+        console.error('Profile update error:', err.response?.data || err);
+      }
       setMessage({ type: 'error', text: err.response?.data?.message || 'Failed to update profile.' });
     } finally {
       setIsSaving(false);
@@ -91,12 +92,13 @@ const Settings = () => {
       });
 
       if (res.data?.status === 'success' || res.status < 400) {
-        console.log('Password changed successfully:', res.data);
         setMessage({ type: 'success', text: 'Your password has been securely reset!' });
         setSecurityForm({ currentPassword: '', newPassword: '', confirmPassword: '' }); // Clear fields
       }
     } catch (err) {
-      console.error('Password change error:', err.response?.data || err.message);
+      if(isDev){
+        console.error('Password change error:', err.response?.data || err);
+      }
       setMessage({ type: 'error', text: err.response?.data?.message || 'Credentials update rejected.' });
     } finally {
       setIsSaving(false);

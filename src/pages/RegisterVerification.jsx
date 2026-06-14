@@ -35,13 +35,13 @@ const RegisterVerification = () => {
       return;
     }
 
-    // 🛠️ CHANGED HERE: Formulate payload data parameters based on flow requirements
+    
     // For recovery, your route expects both code and email to tie them together securely
     const body = flowType === 'recovery' 
       ? { verificationCode: verificationCode.trim(), email: registeredEmail }
       : { verificationCode: verificationCode.trim() };
     
-    // 🛠️ CHANGED HERE: Dynamic API router path switching mapping configuration
+  
     const endpoint = flowType === 'recovery' 
       ? '/verifications/verify-recovery-code' 
       : '/verifications/verify';
@@ -50,7 +50,7 @@ const RegisterVerification = () => {
       const res = await publicAxiosInstance.post(endpoint, body);
       
       if (res.status < 400) {
-        console.log('Verification response:', res.data);
+        
         setSuccess(`Success: ${res.data.message || 'Code verified successfully!'}`);
         setVerificationCode('');
         setVerifyLoading(false);
@@ -74,7 +74,9 @@ const RegisterVerification = () => {
         }
       }
     } catch (err) {
-      console.error('Verification error details:', err);
+      if(isDev){
+        console.error('Verification error details:', err?.response?.data || err);
+      }
       if (err.code === 'ECONNABORTED') {
         setError('Request timeout - server is not responding. Please try again.');
       } else if (err.response?.status === 400) {
@@ -102,12 +104,13 @@ const RegisterVerification = () => {
       if (res.status < 400) {
         setSuccess('Verification code sent to your email.');
         setResendLoading(false);
-        console.log('Resend code response:', res.data);
         return;
       }
     } catch (err) {
-      setError('Failed to resend code: ' + (err.response?.data));
-      console.error('Resend code error:', err);
+      setError('Failed to resend code: try again');
+      if(isDev){
+        console.error('Resend code error:', err?.response?.data ||err);
+      }
       setResendLoading(false);
     }
   };

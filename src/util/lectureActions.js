@@ -9,14 +9,14 @@ export const lectureUtils = {
     
     try {
       const res = await privateAxiosInstance.post(`/bookmarks/toggle/${lectureId}`, { lastPosition });
-      if (isDev) {
-        // console.log("Saving bookmark for lecture:", lectureId, "at position:", lastPosition);
-      }
+      // if (isDev) {
+      //   console.log("Saving bookmark for lecture:", lectureId, "at position:", lastPosition);
+      // }
    
       return res.data;
     } catch (err) {
       if (isDev) {
-        // console.error("Bookmark API error:", err.response?.data || err.message);
+        console.error("Bookmark API error:", err.response?.data || err);
       }
       throw err;
     }
@@ -29,7 +29,7 @@ export const lectureUtils = {
       return res.data; // { status: 'success', isSaved: true/false }
     } catch (err) {
       if (isDev) {
-        console.error("Library API error:", err.response?.data || err.message);
+        console.error("Library API error:", err.response?.data || err);
       }
       throw err;
     }
@@ -53,7 +53,6 @@ export const lectureUtils = {
   },
 
 handleDownload: (lecture, setVideoForLibrary) => {
-    console.log("Initiating download for lecture:", lecture, "with setVideoForLibrary:", typeof setVideoForLibrary === 'function');
     if (lecture.type === 'video') {
       if (typeof setVideoForLibrary === 'function') {
         setVideoForLibrary(lecture);
@@ -81,7 +80,9 @@ confirmLibrarySave: async (videoForLibrary, updateStateCallback, setIsLibraryMut
     }
     setVideoForLibrary(null);
   } catch (err) {
-    console.error("Library save error:", err);
+    if(isDev){
+      console.error("Library save error:", err?.response?.data || err);
+    }
   } finally {
     setIsLibraryMutating(false);
   }

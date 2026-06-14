@@ -10,7 +10,7 @@ const NotificationsDropdown = ({
     navigate,
     location 
 }) => {
-    const [page, setPage] = useState(1);
+    
     const { 
         notifications, 
         followedMosques, 
@@ -24,9 +24,7 @@ const NotificationsDropdown = ({
 
 
     const handleLoadMore = async () => {
-        const nextPage = page + 1;
-        setPage(nextPage);
-        await fetchNotifications(nextPage, 15, false); // false = append to existing list
+        fetchNotifications(false);
     };
 
    return (

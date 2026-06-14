@@ -13,6 +13,7 @@ export const ContextProvider = ({ children}) => {
     const [appLoading, setAppLoading] = useState(false);
     const [authLoading, setAuthLoading] = useState(true);
     const [followedMosques, setFollowedMosques] = useState([]);
+    const [notificationsPage, setNotificationsPage] = useState(1);
    
       const [showProfileMenu, setShowProfileMenu] = useState(false);
      
@@ -32,15 +33,16 @@ const [isFetchingNotifications, setIsFetchingNotifications] = useState(false);
 const [hasMore, setHasMore] = useState(true);
 const [isFetching, setIsFetching] = useState(false);
 
-    const fetchUserData = async () => {
-      setAppLoading(true);
+    // fetchUserData: when called with `showLoading = true` the global
+    // `appLoading` spinner will be toggled. Callers that only need to
+    // refresh user data should call `fetchUserData()` (default: no splash).
+    const fetchUserData = async (showLoading = false) => {
+      if (showLoading) setAppLoading(true);
       try {
         const res = await privateAxiosInstance.get('/users/login-user');
         if (res.status < 400) {
-          setLoggedInUser(res?.data.user);
-          if (isDev) {
-            // console.log('Fetched user data:', res.data.user);
-          }
+          setLoggedInUser(res?.data?.user);
+         
           return true;
         }
       } catch (err) {
@@ -48,7 +50,7 @@ const [isFetching, setIsFetching] = useState(false);
           console.error('Failed to fetch user data:', err.response?.data?.message || err.message);
         }
       } finally {
-        setAppLoading(false);
+        if (showLoading) setAppLoading(false);
       }
 
       return false;
@@ -59,7 +61,7 @@ const [isFetching, setIsFetching] = useState(false);
       try {
         const res = await privateAxiosInstance.get('/profiles/user-profile');
         if (res.status < 400) {
-          setUserProfile(res.data.userProfile.image);
+          setUserProfile(res?.data?.userProfile?.image);
         }
       } catch (err) {
         if (isDev) {
@@ -74,11 +76,11 @@ const [isFetching, setIsFetching] = useState(false);
       try {
         const res = await privateAxiosInstance.get('/mosques/get-followed-mosques');
         if (res.status < 400) {
-          setFollowedMosques(res.data.mosques);
+          setFollowedMosques(res?.data?.mosques);
         }
       } catch (err) {
         if (isDev) {
-          console.error('Failed to fetch followed mosques:', err.response?.data || err.message);
+          console.error('Failed to fetch followed mosques:', err?.response?.data || err);
         }
       }
     };
@@ -88,25 +90,30 @@ const resetNotificationCount = () => {
     setNotificationsCount(0);
 };
 
-const fetchNotifications = async (page = 1, limit = 15, reset = false) => {
+const fetchNotifications = async (reset = false) => {
     setIsFetchingNotifications(true);
+
+    const pageToFetch = reset ? 1 : notificationsPage;
     try {
         const res = await privateAxiosInstance.get('/notifications/get', {
-            params: { page, limit }
+            params: { 
+                  page: pageToFetch,
+                  limit: 15 
+                }
         });
         
         if (res.status < 400) {
-            const { notifications: newNotifs, totalItems } = res.data;
-          //  console.log('notifications', notifications)
+            const { notifications: newNotifs, totalItems } = res?.data;
             
           
             setNotifications(prev => reset ? newNotifs : [...prev, ...newNotifs]);
             // Pagination check
-            setHasMoreNotifications(newNotifs.length === limit);
+            setHasMoreNotifications(newNotifs?.length === 15);
+            setNotificationsPage(prev => reset ? 2 : prev + 1);
         }
     } catch (err) {
         if (isDev) {
-            console.error('Error fetching notifications:', err);
+            console.error('Error fetching notifications:', err?.response?.data || err);
         }
     } finally {
         setIsFetchingNotifications(false);
@@ -124,7 +131,7 @@ const fetchMosques = async (page = 1, limit = 10, searchQuery = '', state = '', 
     });
 
     if (res.status < 400) {
-      const newMosques = res.data.mosques;
+      const newMosques = res?.data?.mosques;
 
       setMosques(prev => {
         if (reset) return newMosques;
@@ -132,7 +139,7 @@ const fetchMosques = async (page = 1, limit = 10, searchQuery = '', state = '', 
         // FILTERING LOGIC: 
         // Only keep newMosques if their ID is not already in the 'prev' list
         const existingIds = new Set(prev.map(m => m.id));
-        const filteredNewMosques = newMosques.filter(m => !existingIds.has(m.id));
+        const filteredNewMosques = newMosques?.filter(m => !existingIds.has(m.id));
         
         return [...prev, ...filteredNewMosques];
       });
@@ -159,8 +166,7 @@ const fetchFollowedMosqueIds = async () => {
     try {
         const res = await privateAxiosInstance.get('/mosques/get-followed-mosque-ids');
         if (res.data.status === 'success') {
-          // console.log(res.data.followedMosqueIds)
-            setFollowMosqueIds(res.data.followedMosqueIds);
+            setFollowMosqueIds(res?.data?.followedMosqueIds);
         }
     } catch (err) {
         if (isDev) {
@@ -178,7 +184,9 @@ useEffect(() => {
         const token = localStorage.getItem('accessToken');
         if (token && token !== 'null' && token !== 'undefined') {
             try {
-                const isLoggedIn = await fetchUserData();
+          // On initial app start we want the splash to show, so
+          // request the fetch to toggle `appLoading`.
+          const isLoggedIn = await fetchUserData(true);
                 if (isLoggedIn) {
                     await Promise.all([
                         fetchUserProfile(),

@@ -41,7 +41,7 @@ const handleSubmit = async (e) => {
       }
     } catch (error) {
       if (isDev) {
-        console.error("Feedback submission error:", error);
+        console.error("Feedback submission error:", error?.response?.data || err);
       }
     } finally {
       setIsSubmitting(false);

@@ -50,7 +50,12 @@ export default function MosqueTeamSettings() {
     }
   };
 
-  useEffect(() => { fetchTeamRoster(); }, [mosqueId]);
+  useEffect(() => { 
+    if(loggedInUser){
+      fetchTeamRoster(); 
+    }
+
+  }, [mosqueId, loggedInUser]);
 
   // 🛡️ VULNERABILITY FIX: Prevent XSS by sanitizing input
   const handleSearchUser = async (e) => {
@@ -78,9 +83,7 @@ export default function MosqueTeamSettings() {
     }
   };
 
-  // ... (Keep handleAddAssistant and handleConfirmRevocation as they are, 
-  // but ensure your backend validates the 'mosqueId' from the session/token,
-  // NOT just from the request body to prevent IDOR attacks.)
+
 
   if (loadingRoster && team.length === 0 || !loggedInUser) return <MosqueTeamSkeleton />;
 

@@ -1,5 +1,5 @@
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import privateAxiosInstance from "../../../auth/privateAxiosInstance"; // Adjust path as needed
 import truncateByWords from "../../util/splitWord";
@@ -28,6 +28,24 @@ const CategoryCart = ({ categories, isOwner, setCategories, setIsEdit, setShowMo
             setShowModal(null);
         }
     };
+
+
+    const menuRef = useRef(null); // 2. Create the ref
+
+useEffect(() => {
+   const handleClickOutside = (event) => {
+    // Check if click is outside the menu AND not on the button itself
+    if (openMenuId !== null && 
+        menuRef.current && 
+        !menuRef.current.contains(event.target) &&
+        !event.target.closest('button')) { // Ignore clicks on buttons (like the menu trigger)
+        setOpenMenuId(null);
+    }
+};
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+}, [openMenuId]);
 
     return (
         <div className="max-w-6xl  mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
@@ -73,16 +91,16 @@ const CategoryCart = ({ categories, isOwner, setCategories, setIsEdit, setShowMo
                                     </button>
 
                                     {openMenuId === cat.id && (
-                                        <div className="absolute right-0 bottom-full mb-2 bg-white border rounded-lg shadow-xl w-36 z-50">
+                                        <div className="absolute right-0 bottom-full mb-2 bg-white border rounded-lg shadow-xl w-36 z-50 p-1"  ref={menuRef}>
                                             <button
                                                 onClick={() => { setIsEdit(true); setShowModal(true); setOpenMenuId(null); setNewCategory(cat); }}
-                                                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 w-full"
+                                                className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-100 w-full cursor-pointer"
                                             >
                                                 <Pencil className="w-4 h-4 text-emerald-700" /> Edit
                                             </button>
                                             <button
                                                 onClick={() => { setShowDeleteCategory(cat.id); setOpenMenuId(null); }}
-                                                className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full"
+                                                className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full cursor-pointer"
                                             >
                                                 <Trash2 className="w-4 h-4" /> Delete
                                             </button>
@@ -93,7 +111,7 @@ const CategoryCart = ({ categories, isOwner, setCategories, setIsEdit, setShowMo
                         </div>
 
                         {showDeleteCategory === cat.id && (
-                            <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                            <div className="fixed inset-0  bg-black/40 flex items-center justify-center z-50">
                                 <div className="bg-white rounded-xl p-6 w-96 max-w-full mx-4">
                                     <h2 className="text-lg font-semibold">Delete Category</h2>
                                     <p className="text-sm mt-2">Are you sure you want to delete {cat.name}?</p>

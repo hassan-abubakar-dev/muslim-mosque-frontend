@@ -47,11 +47,12 @@ const Signup = () => {
         navigate('/verify-email', { state: { email: form.email, flowType: 'registration' } });
       }
     } catch (err) {
-      setError('Failed to register.');
+       setLoading(false);
+      setError( err?.response?.data?.message);
       if(isDev){
-        console.error('Registration error:', err.response?.data);
+        console.error('Registration error:', err?.response?.data?.message || err);
       }
-      setLoading(false);
+     
       return;
     }
   };

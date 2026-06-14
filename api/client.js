@@ -1,9 +1,15 @@
 import { toast } from 'react-toastify';
 
 export const setupErrorInterceptor = (axiosInstance) => {
+      const isDev = import.meta.env.VITE_ENV === 'development';
+      
     axiosInstance.interceptors.response.use(
         (response) => response,
         (error) => {
+
+            if(isDev){
+                console.error("API Error Log:", error);
+            }
 
             if (error.code === 'ERR_CANCELED' || error.name === 'CanceledError') {
                 return Promise.reject(error); 
@@ -12,10 +18,6 @@ export const setupErrorInterceptor = (axiosInstance) => {
             if (!error.response) {
                 toast.error("Network error. Please check your internet connection.");
                 return Promise.reject(error);
-            }
-
-            if (error.code === 'ERR_CANCELED' || error.name === 'CanceledError') {
-                return Promise.reject(error); 
             }
 
             const { status, data } = error.response;
@@ -27,19 +29,15 @@ export const setupErrorInterceptor = (axiosInstance) => {
                     break;
                 case 401:
                     toast.error("Session expired. Please log in again.");
-                    // Only redirect if not already on the login page to avoid loops
-                    if (window.location.pathname !== '/login') {
-                        window.location.href = "/login";
-                    }
                     break;
                 case 500:
-                    toast.error("Server error. Please try again later.");
+                    toast.error("Our servers are currently having trouble. Please try again in a few minutes.");
                     break;
                 case 402:
                     toast.warn("Payment required to access this feature.");
                     break;
                 default:
-                    toast.error(data.message || "Something went wrong.");
+                    toast.error("Something went wrong.");
             }
             return Promise.reject(error);
         }

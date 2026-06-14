@@ -14,6 +14,7 @@ const VideoLibrary = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadingSkeleton, setLoadingSkeleton] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
+  const isDev = import.meta.env.VITE_ENV === 'development';
 
   // Modal tracking state for explicit removal management
   const [videoToRemove, setVideoToRemove] = useState(null);
@@ -88,7 +89,7 @@ const lastLectureElementRef = useCallback((node) => {
           signal: controller.signal,
         });
 
-        console.log(res.data)
+        
 
         if (res.status < 400) {
   const { library, hasMore: serverHasMore, totalResults } = res.data;

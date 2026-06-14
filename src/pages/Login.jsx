@@ -63,7 +63,7 @@ const Login = () => {
       }
 
       if(isDev){
-        console.log('err.response', err);
+        console.log('err.response', err?.response?.data || err);
       }
     }
   };

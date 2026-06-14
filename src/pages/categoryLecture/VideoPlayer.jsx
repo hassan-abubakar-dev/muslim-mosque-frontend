@@ -47,7 +47,9 @@ const VideoPlayer = () => {
             }
             event.target.playVideo();
           },
-          'onError': (e) => console.error("YT Error:", e.data)
+          'onError': (e) => {if(isDev){
+            console.error("YT Error:", e.data)
+          }}
         }
       });
     };

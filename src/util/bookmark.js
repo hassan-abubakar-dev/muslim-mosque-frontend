@@ -10,9 +10,7 @@ const handleBookmarkClick = async (lectureId, lastPosition = 0) => {
   try {
     // Implementation for bookmarking lecture
     const res = await privateAxiosInstance.post(`/bookmarks/toggle/${lectureId}`, body);
-    if (isDev) {
-      console.log('Bookmark response:', res.data);
-    }
+   
   } catch(err){
     if (isDev) {
       console.error(err.response?.data || err.message);

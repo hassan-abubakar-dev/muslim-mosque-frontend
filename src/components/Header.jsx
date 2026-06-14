@@ -66,6 +66,30 @@ const Header = ({ onToggleSidebar }) => {
         }
     }, [query, selectedState]);
 
+
+    
+const profileRef = useRef(null);
+const notificationRef = useRef(null);
+
+
+useEffect(() => {
+    const handleClickOutside = (event) => {
+        // Close profile menu if click is outside profileRef
+        if (profileRef.current && !profileRef.current.contains(event.target)) {
+            setShowProfileMenu(false);
+        }
+        // Close notification dropdown if click is outside notificationRef
+        if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+            setShowNotifications(false);
+        }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+    };
+}, []);
+
     return (
         <header className="bg-linear-to-r from-emerald-800 via-emerald-700 to-green-600 text-white shadow-md fixed top-0 left-0 right-0 h-24 flex items-center z-50">
             <MobileMenu
@@ -103,7 +127,7 @@ const Header = ({ onToggleSidebar }) => {
                         <UserPlus className='w-4 h-4' /> Register Mosque
                     </button>
 
-                    <div className="relative">
+                    <div className="relative"  ref={notificationRef}>
 
 
                         {loggedInUser && (
@@ -111,7 +135,7 @@ const Header = ({ onToggleSidebar }) => {
                                 onClick={async () => {
                                     if (!showNotifications) {
                                         // 1. Fetch first page and reset the local notification list
-                                        await fetchNotifications(1, 15, true);
+                                        await fetchNotifications(true);
 
                                         resetNotificationCount(); // 2. Clear the badge count immediately
                                         // 3. Open the dropdown
@@ -120,6 +144,7 @@ const Header = ({ onToggleSidebar }) => {
                                         setShowNotifications(false);
                                     }
                                 }}
+
                                 className="relative p-2 rounded-full bg-white/20 hover:bg-white/30"
                             >
                                 <Bell className="w-6 h-6" />
@@ -140,7 +165,7 @@ const Header = ({ onToggleSidebar }) => {
                                 setShowNotifications={setShowNotifications}
                                 navigate={navigate}
                                 location={location}
-                                currentMosqueId={currentMosqueId} // Add this prop
+                                currentMosqueId={currentMosqueId}
                             />
                         )}
                     </div>
@@ -154,7 +179,7 @@ const Header = ({ onToggleSidebar }) => {
                         )}
 
                         {loggedInUser && !profileLoading && !authLoading  && (
-                            <div className='relative'>
+                            <div className='relative'  ref={profileRef}>
                                 <img src={userProfile} alt="Profile" onClick={() => setShowProfileMenu(prev => !prev)} className='w-11 h-11 rounded-full border-2 border-white/50 object-cover cursor-pointer' />
                                 {showProfileMenu && <ProfileMenu />}
                             </div>

@@ -13,6 +13,8 @@ const FeedbackList = () => {
     const [selectedFeedback, setSelectedFeedback] = useState(null);
     const [isResolving, setIsResolving] = useState(false);
 
+      const isDev = import.meta.env.VITE_ENV === 'development';
+
     const fetchFeedbacks = async (pageNum, isLoadMore = false) => {
         if (isLoadMore) setLoadingMore(true);
         else setLoading(true);
@@ -26,10 +28,11 @@ const FeedbackList = () => {
             
             setFeedbacks(prev => isLoadMore ? [...prev, ...newFeedbacks] : newFeedbacks);
             setTotalPages(pages);
-            console.log(page)
             
         } catch (err) {
-            console.error("Failed to fetch feedbacks:", err);
+            if(isDev){
+                console.error("Failed to fetch feedbacks:", err?.response?.data || err);
+            }
         } finally {
             setLoading(false);
             setLoadingMore(false);
@@ -46,7 +49,9 @@ const FeedbackList = () => {
             setSelectedFeedback(null);
            
         } catch (err) {
-            console.error("Failed to resolve feedback:", err);
+           if(isDev){
+             console.error("Failed to resolve feedback:", err?.response?.data || err);
+           }
         } finally {
             setIsResolving(false);
         }

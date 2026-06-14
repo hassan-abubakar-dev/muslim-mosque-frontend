@@ -5,6 +5,7 @@ import DownloadConfirmationModal from '../../components/DownloadConfirmationModa
 const AudioPlayerModal = ({ lecture, onClose, onBookmark, fromBookmark, onDownload }) => {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const audioRef = useRef(null);
+    const isDev = import.meta.env.VITE_ENV === 'development';
 
   if (!lecture) return null;
 
@@ -22,7 +23,9 @@ useEffect(() => {
     // Most browsers require user interaction before autoplay
     if (playPromise !== undefined) {
       playPromise.catch(error => {
-        console.log("Autoplay was prevented by the browser. User must interact first.");
+       if(isDev){
+         console.log("Autoplay was prevented by the browser. User must interact first.");
+       }
       });
     }
   }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import publicAxiosInstance from '../../auth/publicAxiosInstance';
+import AdzkarLoadingSkeleton from '../components/loadingSkeletons/AdzkarLoadingSkeleton';
 
 const isDev = import.meta.env.VITE_ENV === 'development';
 
@@ -26,16 +27,14 @@ export default function Adzkar() {
         setLoading(false);
       })
       .catch(err => {
-        if (isDev) {
-          console.error('Failed to fetch adhkar:', err);
-        }
+        if (isDev) console.error('Failed to fetch adhkar:', err);
         setError('Failed to load adhkar from server — showing local data.');
-        setItems('');
+        setItems([]);
         setLoading(false);
       });
   }, []);
 
-  const filtered = items.filter(item => {
+  const filtered = items?.filter(item => {
     if (lang === 'en') return item.languages && item.languages.en;
     return item.languages && item.languages.ar;
   });
@@ -45,7 +44,7 @@ export default function Adzkar() {
   const parseArabicIndic = (s) => {
     if (!s) return null;
     // map Arabic-Indic digits to latin digits
-    const map = { '٠': '0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9' };
+    const map = { '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9' };
     return s.replace(/[٠-٩]/g, d => map[d]);
   };
 
@@ -69,27 +68,31 @@ export default function Adzkar() {
     return null;
   };
 
-// Simplify: Always use the root item.count
-const getTotalForItem = (item) => {
-  const n = Number(item.count);
-  return Number.isInteger(n) && n > 0 ? n : 1;
-};
+  // Simplify: Always use the root item.count
+  const getTotalForItem = (item) => {
+    const n = Number(item.count);
+    return Number.isInteger(n) && n > 0 ? n : 1;
+  };
 
-// Update handleTap and remainingFor to use the simplified helper
-const handleTap = (item, idx) => {
-  const key = getItemKey(item, idx);
-  const total = getTotalForItem(item); 
-  const current = Number(counts[key] || 0);
-  if (current >= total) return;
-  setCounts(prev => ({ ...prev, [key]: current + 1 }));
-};
+  // Update handleTap and remainingFor to use the simplified helper
+  const handleTap = (item, idx) => {
+    const key = getItemKey(item, idx);
+    const total = getTotalForItem(item);
+    const current = Number(counts[key] || 0);
+    if (current >= total) return;
+    setCounts(prev => ({ ...prev, [key]: current + 1 }));
+  };
 
-const remainingFor = (item, idx) => {
-  const key = getItemKey(item, idx);
-  const total = getTotalForItem(item);
-  const clicked = Number(counts[key] || 0);
-  return Math.max(total - clicked, 0);
-};
+  const remainingFor = (item, idx) => {
+    const key = getItemKey(item, idx);
+    const total = getTotalForItem(item);
+    const clicked = Number(counts[key] || 0);
+    return Math.max(total - clicked, 0);
+  };
+
+  // Add this right before your "return (...)"
+if (loading) return <AdzkarLoadingSkeleton />
+if (error) return <div className="text-center py-20 text-red-500">{error}</div>;
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white pb-24 ">
       <div className="max-w-4xl mx-auto px-4 py-6">
@@ -113,54 +116,54 @@ const remainingFor = (item, idx) => {
             <div className="text-center text-gray-500 py-8">No entries found</div>
           )}
 
-         {filtered.map((item, idx) => {
-       
- const remaining = remainingFor(item, idx);
-  const completed = remaining === 0;
-  const currentLangData = item.languages[lang];
+          {filtered.map((item, idx) => {
 
-  return (
-   <article key={item.order || item.id || idx} className="bg-white p-4 rounded-xl shadow">
-      <div className="flex justify-between items-start mb-3">
-        {/* Updated call here: */}
-        <div className="text-sm text-gray-500">#{item.order ?? item.id ?? (idx + 1)} • {getTotalForItem(item)}×</div>
-        {item.audio && <audio controls src={item.audio} className="w-44" />}
-      </div>
+            const remaining = remainingFor(item, idx);
+            const completed = remaining === 0;
+            const currentLangData = item.languages?.[lang] || {};
 
-      <div className="grid gap-3 sm:grid-cols-3 items-center">
-        <div className="sm:col-span-2">
-          <section className="p-3 bg-emerald-50 rounded">
-            <h3 className="font-semibold text-emerald-700 mb-2 capitalize">{lang === 'ar' ? 'Arabic' : 'English'}</h3>
-            
-            {/* The core content is always visible regardless of language tab */}
-            {item.content && (
-              <div dir="rtl" className="font-arabic text-xl text-right mb-4">{item.content}</div>
-            )}
+            return (
+              <article key={item.order || item.id || idx} className="bg-white p-4 rounded-xl shadow">
+                <div className="flex justify-between items-start mb-3">
+                  {/* Updated call here: */}
+                  <div className="text-sm text-gray-500">#{item.order ?? item.id ?? (idx + 1)} • {getTotalForItem(item)}×</div>
+                  {item.audio && <audio controls src={item.audio} className="w-44" />}
+                </div>
 
-            {/* Translation for English tab */}
-            {lang === 'en' && currentLangData.translation && (
-              <div className="text-lg text-gray-800 mb-3">{currentLangData.translation}</div>
-            )}
+                <div className="grid gap-3 sm:grid-cols-3 items-center">
+                  <div className="sm:col-span-2">
+                    <section className="p-3 bg-emerald-50 rounded">
+                      <h3 className="font-semibold text-emerald-700 mb-2 capitalize">{lang === 'ar' ? 'Arabic' : 'English'}</h3>
 
-            {/* Metadata (Fadl, Source) */}
-            <div className="text-sm text-gray-700 mb-1"><strong>Count:</strong> {currentLangData.count_description}</div>
-            {currentLangData.fadl && <div className="text-sm text-gray-600 mb-1"><strong>Fadl:</strong> {currentLangData.fadl}</div>}
-            {currentLangData.source && <div className="text-sm text-gray-500"><strong>Source:</strong> {currentLangData.source}</div>}
-          </section>
-        </div>
+                      {/* The core content is always visible regardless of language tab */}
+                      {item.content && (
+                        <div dir="rtl" className="font-arabic text-xl text-right mb-4">{item.content}</div>
+                      )}
 
-        <div className="flex flex-col items-center justify-center gap-2">
-          <button
-            onClick={() => handleTap(item, idx)}
-            className={`w-20 h-20 rounded-full flex items-center justify-center text-lg font-semibold ${completed ? 'bg-gray-300 text-gray-700' : 'bg-emerald-600 text-white'}`}>
-            {completed ? '✓' : remaining}
-          </button>
-          <div className="text-xs text-gray-500">{completed ? 'Completed' : 'Remaining'}</div>
-        </div>
-      </div>
-    </article>
-  );
-})}
+                      {/* Translation for English tab */}
+                      {lang === 'en' && currentLangData.translation && (
+                        <div className="text-lg text-gray-800 mb-3">{currentLangData.translation}</div>
+                      )}
+
+                      {/* Metadata (Fadl, Source) */}
+                      <div className="text-sm text-gray-700 mb-1"><strong>Count:</strong> {currentLangData.count_description}</div>
+                      {currentLangData.fadl && <div className="text-sm text-gray-600 mb-1"><strong>Fadl:</strong> {currentLangData.fadl}</div>}
+                      {currentLangData.source && <div className="text-sm text-gray-500"><strong>Source:</strong> {currentLangData.source}</div>}
+                    </section>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <button
+                      onClick={() => handleTap(item, idx)}
+                      className={`w-20 h-20 rounded-full flex items-center justify-center text-lg font-semibold ${completed ? 'bg-gray-300 text-gray-700' : 'bg-emerald-600 text-white'}`}>
+                      {completed ? '✓' : remaining}
+                    </button>
+                    <div className="text-xs text-gray-500">{completed ? 'Completed' : 'Remaining'}</div>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </div>
     </div>

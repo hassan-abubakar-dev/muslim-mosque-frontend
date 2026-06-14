@@ -29,24 +29,39 @@ export default function SuperAdminDashboard() {
   const [userSearchTerm, setUserSearchTerm] = useState('');
   const [selectedMosque, setSelectedMosque] = useState(null);
   const [suspendedMosques, setSuspendedMosques] = useState([]);
+  const [pendingMosqueTotalPages, setPendingMosqueTotalPages] = useState(1);
 
   const [userPage, setUserPage] = useState(1);
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
+
+   const isDev = import.meta.env.VITE_ENV === 'development';
 
   const fetchDashboardStats = async () => {
     try {
       const res = await privateAxiosInstance.get('/super-admin/dashboard-stats');
       if (res.status === 200) {
+        
         setStats(res.data.data);
       }
-    } catch (err) { console.error("Stats fetch failed", err); }
+    } catch (err) { 
+      if(isDev){
+        console.error("Stats fetch failed", err?.response?.data || err); 
+      }
+    }
   };
 
   const fetchPendingMosques = async () => {
     try {
       const res = await privateAxiosInstance.get('mosques/get-pending-mosque', { params: { limit: 10, page: 1 } });
-      setPendingMosques(res.data.pendingMosques);
-    } catch (err) { console.error(err); }
+      if(res.status < 400){
+        setPendingMosques(res.data.pendingMosques);
+        setPendingMosqueTotalPages(res.data.totalPages);
+      }
+    } catch (err) { 
+        if(isDev){
+        console.error("fetchPendingMosques fetch failed", err?.response?.data || err); 
+      } 
+    }
   };
 
 const fetchUsers = async (search = '', page = 1, reset = false) => {
@@ -69,7 +84,10 @@ const fetchUsers = async (search = '', page = 1, reset = false) => {
       setUserPage(currentPage);
     }
   } catch (err) {
-    console.error("Failed to fetch users:", err);
+  
+       if(isDev){
+        console.error("Failed to fetch users:", err?.response?.data || err); 
+       }      
   }
 };
 
@@ -106,15 +124,17 @@ useEffect(() => {
         <AdminMetrics stats={stats} />
 
         {/* QUEUE & TABS */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-          <div className="h-full">
-            <PendingMosqueReview
-              pendingMosques={pendingMosques}
-              setSelectedMosque={setSelectedMosque}
-            />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          <div>
+           <PendingMosqueReview
+  pendingMosques={pendingMosques}
+  setPendingMosques={setPendingMosques} 
+  setSelectedMosque={setSelectedMosque}
+  totalPages={pendingMosqueTotalPages}
+/>
           </div>
 
-          <div className="lg:col-span-2 h-full bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm flex flex-col">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm flex flex-col">
             <div className="flex border-b border-gray-100 px-4 pt-2 gap-2">
               {['agents', 'reports', 'feedbacks', 'suspensions'].map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-3 text-xs font-bold border-b-2 capitalize ${activeTab === tab ? 'border-emerald-700 text-emerald-800' : 'border-transparent text-gray-400'}`}>

@@ -10,7 +10,7 @@ const ReportList = () => {
     const [totalPages, setTotalPages] = useState(1);
     const [loading, setLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
-
+  const isDev = import.meta.env.VITE_ENV === 'development';
     // Investigation Modal State
     const [selectedReport, setSelectedReport] = useState(null);
     const [isInvestigating, setIsInvestigating] = useState(false);
@@ -29,8 +29,6 @@ const ReportList = () => {
         try {
             const res = await privateAxiosInstance.get(`/reports/get?page=${pageNum}&limit=10`);
 
-            // OLD (Incorrect): const { reports: newReports, totalPages: pages } = res.data.data;
-
             // NEW (Correct):
             const { reports } = res.data.data; // The reports are inside data
             const { totalPages } = res.data;   // The totalPages are at the top level
@@ -38,7 +36,9 @@ const ReportList = () => {
             setReports(prev => isLoadMore ? [...prev, ...reports] : reports);
             setTotalPages(totalPages);
         } catch (err) {
-            console.error("Failed to fetch reports:", err);
+           if(isDev){
+             console.error("Failed to fetch reports:", err?.response?.data || err);
+           }
         } finally {
             setLoading(false);
             setLoadingMore(false);
@@ -58,7 +58,9 @@ const handleViewMosque = async (mosqueId) => {
         const res = await privateAxiosInstance.get(`mosques/get-mosque/${mosqueId}`);
         navigate(`/mosque/${mosqueId}`, {state: {mosque: res.data.mosque}});
     } catch (err) {
-        console.error("Failed to fetch mosque details:", err.response.data);
+       if(isDev){
+         console.error("Failed to fetch mosque details:", err?.response?.data || err);
+       }
       
     } finally {
         setIsInvestigating(false);
@@ -76,7 +78,9 @@ const handleResolve = async (id) => {
        
        }
     } catch (err) {
-        console.error("Failed to resolve:", err.response.data || err.message);
+       if(isDev){
+         console.error("Failed to resolve:", err?.response?.data || err.message);
+       }
     }
 };
 

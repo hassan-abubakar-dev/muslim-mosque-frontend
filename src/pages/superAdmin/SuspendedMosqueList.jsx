@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import privateAxiosInstance from '../../../auth/privateAxiosInstance';
-import { Loader2 } from 'lucide-react';
+import { Eye, Loader2 } from 'lucide-react';
 import { useUserContext } from '../../context/UserContext'; 
 
 const SuspendedMosqueList = ({ setSelectedMosque, mosques, setMosques }) => {
   const navigate = useNavigate();
   const { mosques: allMosques } = useUserContext();
+
+     const isDev = import.meta.env.VITE_ENV === 'development';
   
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -26,7 +28,9 @@ const SuspendedMosqueList = ({ setSelectedMosque, mosques, setMosques }) => {
       setTotalPages(totalPages);
       setPage(pageNum);
     } catch (err) {
-      console.error("Failed to fetch suspended mosques:", err);
+      if(isDev){
+        console.error("Failed to fetch suspended mosques:", err?.response?.data || err);
+      }
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -38,7 +42,7 @@ const SuspendedMosqueList = ({ setSelectedMosque, mosques, setMosques }) => {
     const localMosque = allMosques?.find(m => String(m.id) === String(mosqueId));
 
     if (localMosque) {
-      navigate(`/mosque/${mosqueId}`, { state: { mosque: localMosque } });
+      navigate(`/mosque/${mosqueId}`);
       return;
     }
 
@@ -46,9 +50,11 @@ const SuspendedMosqueList = ({ setSelectedMosque, mosques, setMosques }) => {
     setIsNavigating(true);
     try {
       const res = await privateAxiosInstance.get(`mosques/get-mosque/${mosqueId}`);
-      navigate(`/mosque/${mosqueId}`, { state: { mosque: res.data.mosque } });
+      navigate(`/mosque/${mosqueId}`);
     } catch (err) {
-      console.error("Failed to fetch mosque details:", err);
+      if(isDev){
+        console.error("Failed to fetch mosque details:", err?.response?.data || err);
+      }
     } finally {
       setIsNavigating(false);
     }
@@ -80,14 +86,14 @@ const SuspendedMosqueList = ({ setSelectedMosque, mosques, setMosques }) => {
                       onClick={() => setSelectedMosque({ ...mosque, status: 'suspended' })} 
                       className="text-amber-700 font-bold text-xs hover:text-amber-900 transition-colors"
                     >
-                      Review
+                      <Eye />
                     </button>
                     <button 
                       onClick={() => handleViewMosque(mosque.id)}
                       disabled={isNavigating}
                       className="text-emerald-700 font-bold text-xs hover:text-emerald-900 transition-colors"
                     >
-                      {isNavigating ? <Loader2 className="w-3 h-3 animate-spin" /> : "View"}
+                      {isNavigating ? <Loader2 className="w-3 h-3 animate-spin" /> : "Review"}
                     </button>
                   </div>
                 </div>

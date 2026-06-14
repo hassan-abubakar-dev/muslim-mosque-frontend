@@ -124,7 +124,7 @@ const handleProtectedAction = (actionCallback, actionName) => {
       setCategories([]);
       return;
     }
-    fetchAllCategories(activeMosque.id);
+    fetchAllCategories(activeMosque?.id);
   }, [activeMosque]);
 
  if (isFetching) return <MosqueLoadingSkeleton />;
